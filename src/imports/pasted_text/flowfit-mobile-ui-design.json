@@ -1,0 +1,201 @@
+Design a complete mobile app UI for FlowFit — a cycle-synced fitness app powered by Gemma 4 AI. The app recommends workouts based on the user's menstrual cycle phase and energy levels.
+
+═══════════════════════════════════════════
+INCLUSIVITY PRINCIPLES — NON-NEGOTIABLE
+═══════════════════════════════════════════
+
+This app is for ALL menstruators — regardless of gender identity. This must be reflected in every design decision:
+
+• Language: Never use "women", "female", or "she/her". Use "menstruators", "people who cycle", "you", "your body". Phase names are clinical and neutral: Menstrual, Follicular, Ovulatory, Luteal.
+• Visuals: No gender-coded imagery (no pink bows, no female silhouettes, no Mars/Venus symbols). Use abstract body illustrations, geometric shapes, and fluid forms that represent all body types.
+• Color: Do NOT use pink as the primary brand color. Choose a palette that is grounded, natural, and warm without being coded as feminine. Suggested direction: deep sage green + warm terracotta + soft off-white + deep charcoal. Or propose your own — just avoid pastels and stereotypically feminine palettes.
+• Body illustrations: If used, show a range of body types, skin tones, and presentations. Keep illustrations minimal and abstract — no gendered clothing or hairstyles.
+• Tone: Clinical where accurate (phase names), warm where emotional (energy check-in). Never cutesy or overly delicate.
+• Icon set: Use neutral geometric icons. No gender symbols, no lipstick, no flowers as primary UI elements.
+
+═══════════════════════════════════════════
+BRAND & VISUAL IDENTITY
+═══════════════════════════════════════════
+
+App name: FlowFit
+Team: Infradian Labs
+Tagline: "Train with your cycle, not against it."
+
+Color palette (use this exactly or propose a strong alternative):
+• Primary: Deep sage #4A7C59 (grounded, natural, not "feminine green")
+• Accent: Warm terracotta #C0622B (energy, warmth, strength)
+• Background: Off-white #F7F5F1 (warm neutral, not clinical white)
+• Surface: #FFFFFF
+• Text primary: #1C1C1E
+• Text secondary: #6B6B6B
+• Phase colors (use sparingly, for phase cards only):
+  – Menstrual: #B84C3A (warm red, not hot pink)
+  – Follicular: #4A7C59 (sage — same as primary)
+  – Ovulatory: #5C4B8A (deep violet — not purple-pink)
+  – Luteal: #A0722A (warm amber)
+
+Typography:
+• Heading: DM Sans Bold or Plus Jakarta Sans — modern, neutral, no serifs
+• Body: Inter Regular
+• Numeric/data: JetBrains Mono or IBM Plex Mono for cycle day numbers and stats
+
+Aesthetic direction: Clean, minimal, clinical-warm. Think: the aesthetic of a high-quality health journal meets a modern fitness tracker. No gradients. No decorative flourishes. Strong white space. Data-forward but warm.
+
+═══════════════════════════════════════════
+SCREENS TO DESIGN — ALL ON MOBILE (390×844px)
+═══════════════════════════════════════════
+
+Design all screens for iPhone 14 Pro (390×844). Show them arranged in a flow on the canvas with arrows connecting the user journey.
+
+---
+
+SCREEN 1: ONBOARDING — Welcome
+• Full-screen illustration: abstract fluid shapes representing a cycle (circular, rhythmic, neutral)
+• Text: "Train with your cycle, not against it."
+• Subtext: "Personalised workouts for every phase of your menstrual cycle."
+• CTA button: "Get started"
+• Small text below: "For all menstruators, regardless of gender identity."
+• NO gender imagery. NO pink.
+
+SCREEN 2: ONBOARDING — Data source selection
+• Title: "How would you like to sync your cycle?"
+• Four options as selectable cards with icons:
+  – Enter manually (pencil icon)
+  – Apple Health (health heart icon — neutral)
+  – Google Fit (activity icon)
+  – Flo app (leaf/flow icon — NOT a flower, NOT pink)
+• Each card: icon + label + one-line description
+• "Flo app" selected state shown (active border + checkmark)
+• Small note: "Flo connects via secure OAuth. No password stored."
+• CTA: "Continue"
+
+SCREEN 3: ONBOARDING — Cycle dates
+• Title: "When did your last cycle begin?"
+• Large date picker input: DD / MM / YYYY
+• Cycle length input: "My cycle is typically __ days" (slider 21–35 days, default 28)
+• Informational note: "Not sure? Enter your best estimate — FlowFit learns over time."
+• CTA: "Continue"
+
+SCREEN 4: ONBOARDING — Goals
+• Title: "What do you want from FlowFit?"
+• Multi-select chip grid (toggle on/off):
+  Build strength · Manage energy · Improve endurance · Reduce cycle symptoms · Stress relief · Flexibility · Weight management
+• CTA: "Let's go"
+
+SCREEN 5: HOME — Dashboard
+• Status bar at top
+• Greeting: "Day 22 · Luteal phase" in large type, phase color accent
+• Phase card (full width, subtle phase-colored background):
+  – Phase name + day number
+  – One-line description: "Progesterone is peaking. Energy may taper — listen to your body."
+  – Horizontal cycle progress bar showing day 22 of 28
+  – Energy level dots (3/5 filled = expected energy)
+• Energy check-in row: "How do you feel today?" — five buttons: Drained / Low / Okay / Good / Strong (NOT "Great" — avoid gendered enthusiasm)
+• Section: "Today's workout" — workout recommendation card (see Screen 6 detail)
+• Section: "Phase tip" — short text card with a recovery or nutrition note
+• "Log yesterday's session →" link
+• Bottom navigation: Home / Calendar / Log / Settings (neutral icons)
+
+SCREEN 6: WORKOUT RECOMMENDATION CARD (embedded in Home, also full screen view)
+• Workout name: "Flow Pilates + Core" in large heading
+• Tags: "35 min" · "Low intensity" · "Luteal phase"
+• "Why this workout" section (subtle background, Gemma AI badge):
+  – Two sentences explaining the phase-appropriate logic
+  – Small badge: "Recommended by Gemma 4"
+• Exercise list: 4 items with phase-color bullet dots
+• Warm-up note (one line)
+• "Start workout" button (primary CTA, full width, phase color)
+• "Refresh suggestion" ghost button below
+
+SCREEN 7: WORKOUT LOG — Input state
+• Back navigation: "← Log"
+• Title: "How did it go?"
+• Subtitle: "Write naturally — our AI will extract the details."
+• Text field: large, multiline, placeholder: "e.g. Felt stronger than expected today, finished all sets..."
+• Workout name input above (smaller)
+• "Analyse with Gemma 4" CTA button (Gemma violet accent)
+• Horizontal scrollable chips showing example phrases
+
+SCREEN 8: WORKOUT LOG — Parsed result state
+• Same layout as Screen 7 but text field is now locked/grey
+• Parsed result card appearing below the text:
+  – "Gemma read this as:" header
+  – Three data rows: Energy (2/5) · Completion (55%) · Mood (tired)
+  – "What FlowFit will adjust" box with Gemma's one-sentence adaptation note
+• "Save log" primary button
+• "Edit note" ghost link
+• Gemma badge: "Analysed on-device · Private"
+
+SCREEN 9: CYCLE CALENDAR VIEW
+• Month view calendar
+• Each day circle colored by phase: phase-appropriate subtle fill
+• Today highlighted with ring
+• Logged workout days shown with small dot below date
+• Phase legend at bottom: Menstrual · Follicular · Ovulatory · Luteal
+• Upcoming phase preview card below calendar: "Follicular phase starts in 6 days — your high-energy window."
+
+SCREEN 10: SETTINGS — Data & Privacy
+• Section: "Cycle data source"
+  – Connected: Flo app (green connected badge) with "Disconnect" option
+  – Other sources: Apple Health (off), Google Fit (off), Manual (off)
+• Section: "AI & Privacy"
+  – Toggle: "Run Gemma on-device (recommended)" — ON, with note: "Your data never leaves your phone"
+  – Toggle: "Cross-device sync (Supabase)" — OFF
+• Section: "About"
+  – App version, GitHub link, Infradian Labs credit
+
+═══════════════════════════════════════════
+COMPONENT LIBRARY (add to left panel)
+═══════════════════════════════════════════
+
+Create a component page with:
+• PhaseCard — 4 variants (one per phase), each with unique phase color
+• WorkoutCard — default + loading + error states
+• EnergyCheckIn — 5-button row, all 5 selected states
+• PhaseBadge — pill with phase name and color
+• GemmaBadge — "Powered by Gemma 4" with Gemma violet
+• FloBadge — "Connected via Flo" with Flo sync state
+• CycleProgressBar — with phase color fill
+• PrimaryButton — default + loading + disabled states
+• GhostButton — default + hover
+• InputField — default + focused + filled + error
+• PhaseCalendarDay — 4 variants (one per phase) + today + logged states
+
+═══════════════════════════════════════════
+API INTEGRATION ANNOTATIONS
+═══════════════════════════════════════════
+
+On each screen that triggers an API call, add a developer annotation layer (using Figma's annotation tools or a sticky note component) showing:
+
+Screen 2 (Flo connection): 
+→ Flo OAuth 2.0: GET partners.flo.health/oauth/authorize
+→ On callback: POST /oauth/token to exchange code for access_token
+→ Store token: Expo SecureStore (encrypted, device-only)
+
+Screen 5 (Home — workout card):
+→ getWorkoutRecommendation() in src/services/gemma.ts
+→ Params: { phase, cycleDay, energyRating, recentWorkouts, goals }
+→ Returns: WorkoutRecommendation JSON
+→ Model: gemma-4-it (API) or gemma-4-e4b (on-device LiteRT)
+
+Screen 7-8 (Log):
+→ parseWorkoutLog() in src/services/gemma.ts
+→ Params: { logText, phase, cycleDay }
+→ Returns: { energyRating, completionPercent, mood, adjustment }
+
+Screen 5 (Flo sync indicator):
+→ GET https://api.flo.health/v1/cycle/current
+→ Auth: Bearer {access_token}
+→ Returns: { start_date, predicted_length, current_day, phase }
+
+═══════════════════════════════════════════
+EXPORT NOTES
+═══════════════════════════════════════════
+
+• Export all components for React Native (Expo) — use auto-layout so they translate cleanly
+• Use 8pt grid throughout
+• All spacing: multiples of 4px (4, 8, 12, 16, 24, 32, 48)
+• Corner radius: 8px (small), 12px (medium), 16px (large), 100px (pill)
+• All touch targets: minimum 44×44px
+• Ensure all text contrast meets WCAG AA (4.5:1 minimum)
+• Export icons as SVG for React Native use

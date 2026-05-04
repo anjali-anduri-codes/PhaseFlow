@@ -1,0 +1,44 @@
+import { PrimaryButton } from '../PrimaryButton';
+
+interface WelcomeScreenProps {
+  onNext: () => void;
+}
+
+export function WelcomeScreen({ onNext }: WelcomeScreenProps) {
+  return (
+    <div className="flex flex-col items-center justify-between h-full p-8 pt-16">
+      <div className="flex-1 flex items-center justify-center w-full">
+        <div className="relative w-64 h-64">
+          <svg viewBox="0 0 200 200" className="w-full h-full">
+            <circle cx="100" cy="100" r="80" fill="var(--flowfit-sage)" opacity="0.1" />
+            <circle cx="100" cy="100" r="60" fill="var(--phase-follicular)" opacity="0.15" />
+            <circle cx="100" cy="100" r="40" fill="var(--phase-ovulatory)" opacity="0.2" />
+            <circle cx="100" cy="100" r="20" fill="var(--flowfit-terracotta)" opacity="0.3" />
+            <path
+              d="M 100 20 Q 160 60 140 120 Q 120 180 100 180 Q 80 180 60 120 Q 40 60 100 20 Z"
+              fill="var(--flowfit-sage)"
+              opacity="0.2"
+            />
+          </svg>
+        </div>
+      </div>
+
+      <div className="w-full space-y-6">
+        <div className="text-center space-y-3">
+          <h1 className="text-3xl">Train with your cycle, not against it.</h1>
+          <p className="text-[var(--flowfit-text-secondary)]">
+            Personalised workouts for every phase of your menstrual cycle.
+          </p>
+        </div>
+
+        <PrimaryButton onClick={onNext}>
+          Get started
+        </PrimaryButton>
+
+        <p className="text-xs text-center text-[var(--flowfit-text-secondary)]">
+          For all menstruators, regardless of gender identity.
+        </p>
+      </div>
+    </div>
+  );
+}
