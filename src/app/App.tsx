@@ -18,6 +18,7 @@ import { WorkoutActiveScreen } from './components/screens/WorkoutActiveScreen';
 import { WorkoutCompleteScreen } from './components/screens/WorkoutCompleteScreen';
 import { GemmaChatScreen } from './components/screens/GemmaChatScreen';
 import {
+  getHomeInsights,
   HomeInsights,
   parseWorkoutLog,
   WorkoutLogAnalysis,
@@ -54,6 +55,23 @@ type Screen =
   | 'settings'
   | 'gemma-chat';
 
+interface WorkoutSessionSummary {
+  elapsedSeconds: number;
+  completedExercises: number;
+  totalExercises: number;
+  phase: string;
+}
+
+function normalizeName(name: string): string {
+  const trimmed = name.trim();
+  if (!trimmed) {
+    return '';
+  }
+
+  const lower = trimmed.toLowerCase();
+  return `${lower[0].toUpperCase()}${lower.slice(1)}`;
+}
+
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('welcome');
   const [selectedDataSource, setSelectedDataSourceState] = useState<DataSource>(() =>
@@ -75,6 +93,7 @@ export default function App() {
   const [onboardingGoals, setOnboardingGoals] = useState<string[]>([]);
   const [latestHomeInsights, setLatestHomeInsights] = useState<HomeInsights | null>(null);
   const [activeWorkoutPlan, setActiveWorkoutPlan] = useState<WorkoutRecommendation | null>(null);
+  const [lastWorkoutSession, setLastWorkoutSession] = useState<WorkoutSessionSummary | null>(null);
 
   const handleNavigate = (screen: string) => {
     setCurrentScreen(screen as Screen);
@@ -156,7 +175,7 @@ export default function App() {
           <NameEntryScreen
             initialName={userName}
             onNext={(name) => {
-              setUserName(name);
+              setUserName(normalizeName(name));
               setCurrentScreen('about-you-intro');
             }}
           />
@@ -186,6 +205,9 @@ export default function App() {
           <CycleDatesScreen
             onNext={(payload) => {
               setOnboardingCycle(payload);
+              if (payload.userName) {
+                setUserName(normalizeName(payload.userName));
+              }
               setLatestHomeInsights(null);
               setCurrentScreen('goals');
             }}
@@ -199,6 +221,9 @@ export default function App() {
             infoText="We could not find cycle records in Google Fit. Add this once to personalize your recommendations."
             onNext={(payload) => {
               setOnboardingCycle(payload);
+              if (payload.userName) {
+                setUserName(normalizeName(payload.userName));
+              }
               setLatestHomeInsights(null);
               setNeedsManualCycleEntry(false);
               clearGoogleNeedsManualCycleSetup();
@@ -250,9 +275,13 @@ export default function App() {
         return (
           <WorkoutActiveScreen
             onExit={() => setCurrentScreen('workouts-library')}
-            onComplete={() => setCurrentScreen('workout-complete')}
+            onComplete={(summary) => {
+              setLastWorkoutSession(summary);
+              setCurrentScreen('workout-complete');
+            }}
             onChat={() => setCurrentScreen('gemma-chat')}
             workoutPlan={activeWorkoutPlan}
+            currentPhase={latestHomeInsights?.phase}
           />
         );
       case 'workout-complete':
@@ -260,6 +289,7 @@ export default function App() {
           <WorkoutCompleteScreen
             onFinish={() => setCurrentScreen('home')}
             onLogWorkout={() => setCurrentScreen('workout-log-input')}
+            summary={lastWorkoutSession}
           />
         );
       case 'gemma-chat':

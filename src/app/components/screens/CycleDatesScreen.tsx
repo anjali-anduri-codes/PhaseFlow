@@ -20,7 +20,7 @@ interface CycleDatesScreenProps {
 export function CycleDatesScreen({
   onNext,
   title = 'When did your last cycle begin?',
-  infoText = 'Not sure? Enter your best estimate — FlowFit learns over time.',
+  infoText = 'Not sure? Enter your best estimate — PhaseFlow learns over time.',
   continueLabel = 'Continue',
   requireName = false,
   initialUserName = ''

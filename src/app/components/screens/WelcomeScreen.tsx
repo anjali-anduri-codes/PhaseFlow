@@ -53,17 +53,27 @@ export function WelcomeScreen({ onNext }: WelcomeScreenProps) {
 
       <div className="w-full space-y-6">
         <div className="text-center space-y-3">
-          <h1 className="text-3xl">Train with your cycle, not against it.</h1>
-          <p className="text-[var(--flowfit-text-secondary)]">
+          <p
+            className="text-2xl tracking-[0.06em] text-[var(--flowfit-sage)] font-extrabold leading-none"
+            style={{ animation: 'flowfit-brand-settle 0.62s ease-out both' }}
+          >
+            PhaseFlow
+          </p>
+          <h1 className="text-3xl" style={{ animation: 'flowfit-fade-up 0.55s ease-out 0.35s both' }}>
+            Train with your cycle, not against it.
+          </h1>
+          <p className="text-[var(--flowfit-text-secondary)]" style={{ animation: 'flowfit-fade-up 0.62s ease-out 0.52s both' }}>
             Personalised workouts for every phase of your menstrual cycle.
           </p>
         </div>
 
-        <PrimaryButton onClick={onNext}>
+        <div style={{ animation: 'flowfit-fade-up 0.6s ease-out 0.68s both' }}>
+          <PrimaryButton onClick={onNext}>
           Get started
-        </PrimaryButton>
+          </PrimaryButton>
+        </div>
 
-        <p className="text-xs text-center text-[var(--flowfit-text-secondary)]">
+        <p className="text-xs text-center text-[var(--flowfit-text-secondary)]" style={{ animation: 'flowfit-fade-in 0.65s ease-out 0.8s both' }}>
           For all menstruators, regardless of gender identity.
         </p>
       </div>

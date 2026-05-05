@@ -5,9 +5,30 @@ import { Check, TrendingUp, Zap, Heart } from 'lucide-react';
 interface WorkoutCompleteScreenProps {
   onFinish: () => void;
   onLogWorkout: () => void;
+  summary?: {
+    elapsedSeconds: number;
+    completedExercises: number;
+    totalExercises: number;
+    phase: string;
+  } | null;
 }
 
-export function WorkoutCompleteScreen({ onFinish, onLogWorkout }: WorkoutCompleteScreenProps) {
+function formatDuration(seconds: number): string {
+  const safeSeconds = Math.max(0, Math.round(seconds));
+  const mins = Math.floor(safeSeconds / 60);
+  const secs = safeSeconds % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+function formatPhase(phase: string): string {
+  if (!phase || phase.toLowerCase() === 'unknown') {
+    return 'Unknown';
+  }
+
+  return `${phase[0].toUpperCase()}${phase.slice(1).toLowerCase()}`;
+}
+
+export function WorkoutCompleteScreen({ onFinish, onLogWorkout, summary }: WorkoutCompleteScreenProps) {
   const [feeling, setFeeling] = useState<string | null>(null);
 
   const feelings = [
@@ -31,17 +52,19 @@ export function WorkoutCompleteScreen({ onFinish, onLogWorkout }: WorkoutComplet
         <div className="w-full max-w-sm space-y-4 mb-8">
           <div className="flex justify-between p-4 bg-white rounded-xl">
             <span className="text-[var(--flowfit-text-secondary)]">Duration</span>
-            <span className="font-['JetBrains_Mono']">35:24</span>
+            <span className="font-['JetBrains_Mono']">{formatDuration(summary?.elapsedSeconds || 0)}</span>
           </div>
 
           <div className="flex justify-between p-4 bg-white rounded-xl">
             <span className="text-[var(--flowfit-text-secondary)]">Exercises</span>
-            <span className="font-['JetBrains_Mono']">4 completed</span>
+            <span className="font-['JetBrains_Mono']">
+              {summary ? `${summary.completedExercises}/${summary.totalExercises} completed` : '0 completed'}
+            </span>
           </div>
 
           <div className="flex justify-between p-4 bg-white rounded-xl">
             <span className="text-[var(--flowfit-text-secondary)]">Phase</span>
-            <span>Luteal</span>
+            <span>{formatPhase(summary?.phase || 'Unknown')}</span>
           </div>
         </div>
 

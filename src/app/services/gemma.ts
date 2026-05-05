@@ -49,6 +49,7 @@ export interface HomeInsightsInput {
 
 export interface ChatContext {
   userName?: string;
+  lastCycleStartDate?: string;
   lastPeriodFrom?: string;
   lastPeriodTo?: string;
   cycleLength?: number;
@@ -73,6 +74,16 @@ interface WorkoutLogInput {
 
 interface CallGemmaOptions {
   expectsJson?: boolean;
+}
+
+interface HomeRecommendationPartial {
+  name?: string;
+  duration?: string;
+  intensity?: string;
+  phase?: string;
+  reason?: string;
+  exercises?: string[];
+  warmup?: string;
 }
 
 export interface GemmaStatus {
@@ -182,7 +193,7 @@ async function callGemmaDirect(
         ],
         generationConfig: {
           temperature: 0.7,
-          maxOutputTokens: 700,
+          maxOutputTokens: options?.expectsJson ? 1500 : 700,
           ...(options?.expectsJson ? { responseMimeType: 'application/json' } : {})
         }
       })
@@ -210,8 +221,7 @@ async function callGemma(prompt: string, options?: CallGemmaOptions): Promise<st
   const { apiKey, model, localOnly } = getClientGemmaConfig();
 
   // Single-request strategy: choose exactly one path, no fallback retries.
-  // Prefer direct call when a client API key exists so local/dev flows stay functional.
-  if (apiKey) {
+  if (localOnly && apiKey) {
     return callGemmaDirect(prompt, apiKey, model, options);
   }
 
@@ -250,6 +260,130 @@ function parseJson<T>(text: string): T {
   }
 }
 
+interface CycleTimeline {
+  cycleDay: number;
+  totalDays: number;
+  phase: Phase;
+  daysUntilNextPeriod: number;
+}
+
+function parseIsoDate(value?: string): Date | null {
+  if (!value) {
+    return null;
+  }
+
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) {
+    return null;
+  }
+
+  const [, year, month, day] = match;
+  return new Date(Number(year), Number(month) - 1, Number(day));
+}
+
+function diffInCalendarDays(a: Date, b: Date): number {
+  const aUtc = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate());
+  const bUtc = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate());
+  const msPerDay = 24 * 60 * 60 * 1000;
+  return Math.floor((aUtc - bUtc) / msPerDay);
+}
+
+function inferPhaseFromCycleDay(cycleDay: number, cycleLength: number): Phase {
+  const menstruationEnd = 5;
+  const lutealStart = Math.max(menstruationEnd + 1, cycleLength - 13);
+  const ovulationCenter = Math.max(menstruationEnd + 1, cycleLength - 14);
+  const ovulationStart = Math.max(menstruationEnd + 1, ovulationCenter - 1);
+  const ovulationEnd = Math.min(lutealStart - 1, ovulationCenter + 1);
+
+  if (cycleDay <= menstruationEnd) {
+    return 'menstrual';
+  }
+
+  if (cycleDay >= lutealStart) {
+    return 'luteal';
+  }
+
+  if (cycleDay >= ovulationStart && cycleDay <= ovulationEnd) {
+    return 'ovulatory';
+  }
+
+  return 'follicular';
+}
+
+function deriveCycleTimeline(input: {
+  lastCycleStartDate?: string;
+  lastPeriodFrom?: string;
+  cycleLength?: number;
+}): CycleTimeline | null {
+  const cycleLength = Math.min(35, Math.max(21, Math.round(input.cycleLength || 28)));
+  const startDate = parseIsoDate(input.lastCycleStartDate || input.lastPeriodFrom);
+  if (!startDate) {
+    return null;
+  }
+
+  const today = new Date();
+  const rawDaysSinceStart = diffInCalendarDays(today, startDate);
+  const normalizedDaysSinceStart = ((rawDaysSinceStart % cycleLength) + cycleLength) % cycleLength;
+  const cycleDay = normalizedDaysSinceStart + 1;
+  const daysUntilNextPeriod = cycleLength - cycleDay;
+  const phase = inferPhaseFromCycleDay(cycleDay, cycleLength);
+
+  return {
+    cycleDay,
+    totalDays: cycleLength,
+    phase,
+    daysUntilNextPeriod
+  };
+}
+
+function sanitizeChatReply(raw: string): string {
+  let text = stripCodeFence(raw).trim();
+
+  // If the model wraps the final answer in quotes after planning text, prefer that quoted answer.
+  const quotedAnswers = [...text.matchAll(/"([^"\n]{24,})"/g)].map((match) => match[1]?.trim());
+  if (quotedAnswers.length > 0) {
+    const longest = quotedAnswers.sort((a, b) => (b?.length || 0) - (a?.length || 0))[0];
+    if (longest) {
+      text = longest;
+    }
+  }
+
+  const leakedPlanning =
+    /(Persona:|Constraint:|Current User State:|Draft\s*\d+|Cycle Status:|Style:|Characteristics:|Gemma\s*4)/i;
+  if (leakedPlanning.test(text)) {
+    const draftMatch = text.match(/Draft\s*\d+\s*:\*?\s*([\s\S]*)/i);
+    if (draftMatch?.[1]) {
+      text = draftMatch[1].trim();
+    }
+
+    const filtered = text
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => line.replace(/^[-*]\s*/, ''))
+      .filter(
+        (line) =>
+          !/^(Gemma\s*4|Style|Characteristics|Persona|User|Cycle Status|Current User State|Goal|Constraint|Phase|Typical hormonal shift|Acknowledge|Explain|Suggest|Recommend|Encourage|Concise\?|Supportive\?|Practical\?|No medical diagnosis\?|Under 140 words\?|Addressed .+\?|Cycle-aware\?)/i.test(
+            line
+          )
+      )
+      .join(' ')
+      .trim();
+
+    if (filtered) {
+      text = filtered;
+    }
+  }
+
+  return text
+    .replace(/^\*+\s*Draft\s*\d+\s*:\*?\s*/i, '')
+    .replace(/^Gemma\s*4\s*/i, '')
+    .replace(/^Style:\s*.*$/gim, '')
+    .replace(/^Characteristics:\s*.*$/gim, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
 export async function sendChatMessage(
   userMessage: string,
   conversationHistory: ChatMessage[],
@@ -264,17 +398,27 @@ export async function sendChatMessage(
   const lastPeriodFrom = context?.lastPeriodFrom || 'not provided';
   const lastPeriodTo = context?.lastPeriodTo || 'not provided';
   const cycleLength = context?.cycleLength || 'not provided';
-  const currentPhase = context?.currentPhase || 'unknown';
-  const currentCycleDay = context?.currentCycleDay || 'unknown';
+  const timeline = deriveCycleTimeline({
+    lastCycleStartDate: context?.lastCycleStartDate,
+    lastPeriodFrom: context?.lastPeriodFrom,
+    cycleLength: context?.cycleLength
+  });
+  const currentPhase = context?.currentPhase || timeline?.phase || 'unknown';
+  const currentCycleDay = context?.currentCycleDay || timeline?.cycleDay || 'unknown';
 
   const prompt = [
     'You are Gemma, a cycle-aware fitness coach for an inclusive health app.',
     'Give concise, supportive, practical advice.',
     'Avoid medical diagnosis. If symptoms seem severe, recommend professional care.',
     'Keep responses under 140 words unless user asks for more detail.',
+    'Output only the final answer to the user. Do not output analysis, planning notes, bullets about constraints, drafts, or self-evaluation.',
+    'Never include labels such as Persona, User, Cycle Status, Goal, Constraint, Draft, or checklists.',
     userName ? `The user is named ${userName}. Address them by name naturally.` : 'Use a warm conversational tone.',
     `Last period window: ${lastPeriodFrom} to ${lastPeriodTo}`,
     `Typical cycle length: ${cycleLength}`,
+    timeline
+      ? `Computed cycle status from dates: day ${timeline.cycleDay}/${timeline.totalDays}, phase ${timeline.phase}, next period in about ${timeline.daysUntilNextPeriod} day(s).`
+      : 'Computed cycle status from dates: unavailable.',
     `Current known phase/day: ${currentPhase} / ${currentCycleDay}`,
     `User goals: ${goals}`,
     '',
@@ -283,10 +427,11 @@ export async function sendChatMessage(
     '',
     `User message: ${userMessage}`,
     '',
-    'Reply as assistant only.'
+    'Reply as assistant only with one final user-facing response.'
   ].join('\n');
 
-  return callGemma(prompt, { expectsJson: false });
+  const raw = await callGemma(prompt, { expectsJson: false });
+  return sanitizeChatReply(raw);
 }
 
 export async function parseWorkoutLog(input: WorkoutLogInput): Promise<WorkoutLogAnalysis> {
@@ -339,6 +484,114 @@ export async function getWorkoutRecommendation(
   };
 }
 
+function getPhaseRecommendationDefaults(phase: Phase): WorkoutRecommendation {
+  switch (phase) {
+    case 'menstrual':
+      return {
+        name: 'Low-impact recovery flow',
+        duration: '20-30 min',
+        intensity: 'Low',
+        phase: 'Menstrual phase',
+        reason: 'Focus on comfort, circulation, and gentle mobility while energy may be lower.',
+        exercises: [
+          'Diaphragmatic breathing in 90/90 - 2 sets x 60 sec',
+          'Cat-cow and child\'s pose flow - 2 sets x 8 reps',
+          'Glute bridges (slow tempo) - 2 sets x 10 reps',
+          'Supported hamstring + hip flexor stretch - 2 sets x 45 sec'
+        ],
+        warmup: '3-5 minutes of relaxed breathing and gentle spine mobility.'
+      };
+    case 'follicular':
+      return {
+        name: 'Progressive strength builder',
+        duration: '30-40 min',
+        intensity: 'Moderate',
+        phase: 'Follicular phase',
+        reason: 'Use rising energy for progressive overload and skill practice.',
+        exercises: [
+          'Goblet squat progression - 3 sets x 10-12 reps',
+          'Push-up progression (incline or floor) - 3 sets x 8-10 reps',
+          'Romanian deadlift with dumbbells/bands - 3 sets x 10 reps',
+          'Plank with shoulder taps - 3 sets x 30 sec'
+        ],
+        warmup: '5 minutes of dynamic warmup with leg swings and thoracic rotations.'
+      };
+    case 'ovulatory':
+      return {
+        name: 'Power and performance circuit',
+        duration: '30-45 min',
+        intensity: 'Moderate-High',
+        phase: 'Ovulatory phase',
+        reason: 'Capitalize on peak energy with controlled power and athletic work.',
+        exercises: [
+          'Squat-to-press power reps - 4 sets x 8 reps',
+          'Lateral bounds or side skaters - 4 sets x 20 sec',
+          'Alternating reverse lunges - 3 sets x 10 each side',
+          'Dead bug (controlled tempo) - 3 sets x 12 reps'
+        ],
+        warmup: '5 minutes of dynamic activation including hips, glutes, and shoulders.'
+      };
+    case 'luteal':
+    default:
+      return {
+        name: 'Steady-state strength and core',
+        duration: '25-35 min',
+        intensity: 'Moderate',
+        phase: 'Luteal phase',
+        reason: 'Prioritize steady effort, lower stress load, and core stability as fatigue can rise.',
+        exercises: [
+          'Tempo split squats (controlled eccentric) - 3 sets x 8 each side',
+          'Banded rows or dumbbell rows - 3 sets x 10 reps',
+          'Pallof press anti-rotation holds - 3 sets x 30 sec each side',
+          'Low-impact incline walk or marching cooldown - 1 set x 4 min'
+        ],
+        warmup: '4-5 minutes of breathing, glute activation, and gentle mobility.'
+      };
+  }
+}
+
+function normalizePhaseExercises(phase: Phase, exercises: string[] | undefined): string[] {
+  const defaults = getPhaseRecommendationDefaults(phase).exercises;
+  if (!Array.isArray(exercises) || exercises.length === 0) {
+    return defaults;
+  }
+
+  const trimmed = exercises.filter(Boolean).slice(0, 4);
+  const phaseAnchors: Record<Phase, RegExp> = {
+    menstrual: /(breathing|cat-cow|child|bridge|mobility|stretch)/i,
+    follicular: /(squat|push|deadlift|progression|strength)/i,
+    ovulatory: /(power|bounds|skater|press|athletic)/i,
+    luteal: /(tempo|row|pallof|core|steady|low-impact)/i
+  };
+
+  if (!trimmed.some((exercise) => phaseAnchors[phase].test(exercise))) {
+    trimmed[0] = defaults[0];
+  }
+
+  while (trimmed.length < 4) {
+    trimmed.push(defaults[trimmed.length]);
+  }
+
+  return trimmed;
+}
+
+function normalizeHomeRecommendation(
+  phase: Phase,
+  recommendation: HomeRecommendationPartial | undefined
+): WorkoutRecommendation {
+  const defaults = getPhaseRecommendationDefaults(phase);
+
+  return {
+    name: recommendation?.name || defaults.name,
+    duration: recommendation?.duration || defaults.duration,
+    intensity: recommendation?.intensity || defaults.intensity,
+    phase: recommendation?.phase || defaults.phase,
+    reason: recommendation?.reason || defaults.reason,
+    exercises: normalizePhaseExercises(phase, recommendation?.exercises),
+    warmup: recommendation?.warmup || defaults.warmup
+  };
+}
+
 export async function getHomeInsights(input: HomeInsightsInput): Promise<HomeInsights> {
   const goals = input.goals?.length ? input.goals.join(', ') : 'not specified';
   const userName = input.userName || 'not provided';
@@ -347,6 +600,11 @@ export async function getHomeInsights(input: HomeInsightsInput): Promise<HomeIns
   const lastPeriodTo = input.lastPeriodTo || 'not provided';
   const cycleLength = input.cycleLength || 28;
   const dataSource = input.dataSource || 'manual';
+  const timeline = deriveCycleTimeline({
+    lastCycleStartDate: input.lastCycleStartDate,
+    lastPeriodFrom: input.lastPeriodFrom,
+    cycleLength: input.cycleLength
+  });
 
   const prompt = [
     'Generate daily cycle-aware home dashboard data for a fitness app and return JSON only.',
@@ -354,6 +612,9 @@ export async function getHomeInsights(input: HomeInsightsInput): Promise<HomeIns
     'phase must be one of: menstrual, follicular, ovulatory, luteal.',
     'stats keys: streakDays, workoutsThisWeek, levelProgress.',
     'recommendation keys: name, duration, intensity, phase, reason, exercises (4 items), warmup.',
+    'Each exercise must include set/rep or timed format, e.g. "Goblet squat - 3 sets x 10 reps" or "Plank - 3 sets x 30 sec".',
+    'Do not reuse the same workout profile across phases; make movements phase-specific.',
+    'Menstrual should favor gentle mobility/recovery, luteal should favor steady moderate strength/core.',
     `User name: ${userName}`,
     `User check-in response for "How do you feel today?": energy ${input.energyRating}/5`,
     `Data source: ${dataSource}`,
@@ -361,40 +622,43 @@ export async function getHomeInsights(input: HomeInsightsInput): Promise<HomeIns
     `Last Period to: ${lastPeriodTo}`,
     `Last cycle start date: ${lastCycleDate}`,
     `Typical cycle length: ${cycleLength}`,
+    timeline
+      ? `Computed cycle status from dates (authoritative): day ${timeline.cycleDay}/${timeline.totalDays}, phase ${timeline.phase}, next period expected in about ${timeline.daysUntilNextPeriod} day(s).`
+      : 'Computed cycle status from dates: unavailable.',
     `User goals: ${goals}`,
     'Use inclusive language for menstruators.',
+    'When computed cycle status is provided, keep phase/day consistent with it.',
     'Return strict JSON with no markdown.'
   ].join('\n');
 
   const text = await callGemma(prompt, { expectsJson: true });
-  const parsed = parseJson<HomeInsights>(text);
+  const parsed = parseJson<Partial<HomeInsights>>(text);
 
-  if (!parsed.phase || !parsed.recommendation || !Array.isArray(parsed.recommendation.exercises)) {
-    throw new Error('Gemma returned incomplete home insights data.');
-  }
-
-  const phase: Phase =
+  const parsedPhase: Phase | null =
     parsed.phase === 'menstrual' ||
     parsed.phase === 'follicular' ||
     parsed.phase === 'ovulatory' ||
     parsed.phase === 'luteal'
       ? parsed.phase
-      : 'follicular';
+      : null;
+  const phase: Phase = timeline?.phase || parsedPhase || 'follicular';
+  const cycleDay = timeline?.cycleDay || Math.max(1, Math.round(parsed.cycleDay || 1));
+  const totalDays = timeline?.totalDays || Math.max(21, Math.round(parsed.totalDays || 28));
 
   return {
-    ...parsed,
+    cycleDay,
+    totalDays,
     phase,
-    cycleDay: Math.max(1, Math.round(parsed.cycleDay || 1)),
-    totalDays: Math.max(21, Math.round(parsed.totalDays || 28)),
+    phaseDescription:
+      parsed.phaseDescription ||
+      'Tune your workout intensity to your current cycle phase and energy level today.',
     stats: {
       streakDays: Math.max(0, Math.round(parsed.stats?.streakDays || 0)),
       workoutsThisWeek: Math.max(0, Math.round(parsed.stats?.workoutsThisWeek || 0)),
       levelProgress: Math.max(1, Math.round(parsed.stats?.levelProgress || 1))
     },
-    recommendation: {
-      ...parsed.recommendation,
-      exercises: parsed.recommendation.exercises.slice(0, 4)
-    }
+    phaseTip: parsed.phaseTip || 'Stay consistent and adjust intensity to your energy today.',
+    recommendation: normalizeHomeRecommendation(phase, parsed.recommendation)
   };
 }
 

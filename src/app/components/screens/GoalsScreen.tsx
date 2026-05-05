@@ -27,7 +27,7 @@ export function GoalsScreen({ onNext }: GoalsScreenProps) {
   return (
     <div className="flex flex-col h-full p-6 pt-16">
       <div className="mb-8">
-        <h1 className="mb-2">What do you want from FlowFit?</h1>
+        <h1 className="mb-2">What do you want from PhaseFlow?</h1>
       </div>
 
       <div className="flex-1 mb-6">

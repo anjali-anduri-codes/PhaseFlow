@@ -48,6 +48,26 @@ function renderMessageContent(content: string): ReactNode {
     <div className="space-y-2">
       {paragraphs.map((paragraph, index) => {
         const lines = paragraph.split('\n');
+        const bulletLines = lines
+          .map((line) => line.trim())
+          .filter(Boolean)
+          .filter((line) => /^[-*•]\s+/.test(line))
+          .map((line) => line.replace(/^[-*•]\s+/, ''));
+
+        const isBulletList = bulletLines.length > 0 && bulletLines.length === lines.filter((line) => line.trim()).length;
+
+        if (isBulletList) {
+          return (
+            <ul key={`paragraph-${index}`} className="space-y-1">
+              {bulletLines.map((item, itemIndex) => (
+                <li key={`bullet-${itemIndex}`} className="flex items-start gap-2 text-sm leading-relaxed">
+                  <span className="w-2 h-2 rounded-full bg-[var(--flowfit-sage)] mt-2 flex-shrink-0" />
+                  <span>{renderInlineFormatting(item)}</span>
+                </li>
+              ))}
+            </ul>
+          );
+        }
 
         return (
           <p key={`paragraph-${index}`} className="text-sm leading-relaxed">
@@ -132,6 +152,7 @@ export function GemmaChatScreen({
     try {
       const reply = await sendChatMessage(messageText, nextHistory, {
         userName,
+        lastCycleStartDate: cycleContext?.lastCycleStartDate,
         lastPeriodFrom: cycleContext?.lastPeriodFrom,
         lastPeriodTo: cycleContext?.lastPeriodTo,
         cycleLength: cycleContext?.cycleLength,
@@ -191,7 +212,14 @@ export function GemmaChatScreen({
                   message.role === 'user' ? 'text-right text-[var(--flowfit-text-secondary)]' : 'text-[var(--flowfit-text-secondary)]'
                 }`}
               >
-                {message.role === 'user' ? 'You' : 'Gemma'}
+                {message.role === 'user' ? (
+                  'You'
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 text-[var(--flowfit-sage)]">
+                    <Sparkles size={12} />
+                    <span>AI</span>
+                  </span>
+                )}
               </div>
 
               <div
@@ -201,13 +229,6 @@ export function GemmaChatScreen({
                     : 'bg-white text-[var(--flowfit-text-primary)] rounded-bl-md border border-gray-100'
                 }`}
               >
-              {message.role === 'assistant' && (
-                <div className="flex items-center gap-2 mb-2">
-                  <Sparkles size={16} className="text-[var(--phase-ovulatory)]" />
-                  <span className="text-xs text-[var(--flowfit-text-secondary)]">Gemma 4</span>
-                </div>
-              )}
-
                 <div className={message.role === 'user' ? 'text-white [&_strong]:font-semibold [&_strong]:text-white' : '[&_strong]:font-semibold [&_strong]:text-[var(--flowfit-text-primary)]'}>
                   {renderMessageContent(message.content)}
                 </div>
@@ -265,7 +286,7 @@ export function GemmaChatScreen({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-            placeholder="Ask about workouts, nutrition, or your cycle..."
+            placeholder="Ask Gemma"
             className="flex-1 px-4 py-3 rounded-xl bg-[var(--flowfit-off-white)] border-2 border-transparent focus:border-[var(--flowfit-sage)] transition-colors"
             disabled={isTyping}
           />

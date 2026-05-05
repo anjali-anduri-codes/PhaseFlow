@@ -1,4 +1,13 @@
-import { VercelRequest, VercelResponse } from '@vercel/node';
+type VercelRequest = {
+  method?: string;
+  body?: unknown;
+};
+
+type VercelResponse = {
+  status: (code: number) => {
+    json: (payload: unknown) => void;
+  };
+};
 
 interface GemmaResponse {
   candidates?: Array<{
@@ -43,8 +52,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   }
 
   try {
-    const apiKey = process.env.GEMMA_API_KEY;
-    const model = sanitizeGemmaModel(process.env.GEMMA_MODEL);
+    const env = ((globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env ??
+      {}) as Record<string, string | undefined>;
+    const apiKey = env.GEMMA_API_KEY;
+    const model = sanitizeGemmaModel(env.GEMMA_MODEL);
 
     if (!apiKey) {
       res.status(500).json({ error: 'GEMMA_API_KEY is not configured' });
@@ -73,7 +84,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
           ],
           generationConfig: {
             temperature: 0.7,
-            maxOutputTokens: 700,
+            maxOutputTokens: expectsJson ? 1500 : 700,
             ...(expectsJson ? { responseMimeType: 'application/json' } : {})
           }
         })

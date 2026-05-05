@@ -7,39 +7,147 @@ interface WorkoutPlan {
   exercises: string[];
 }
 
+interface WorkoutExercise {
+  name: string;
+  workSeconds: number;
+  sets: number;
+  restSeconds: number;
+  repsText: string;
+  description: string;
+}
+
 interface WorkoutActiveScreenProps {
   onExit: () => void;
-  onComplete: () => void;
+  onComplete: (summary: {
+    elapsedSeconds: number;
+    completedExercises: number;
+    totalExercises: number;
+    phase: string;
+  }) => void;
   onChat: () => void;
   workoutPlan?: WorkoutPlan | null;
+  currentPhase?: string;
 }
 
 const defaultExercises = [
-  { name: 'Cat-cow flows', duration: 300, sets: 1, description: '5 minutes of gentle spinal movement' },
-  { name: 'Modified plank holds', duration: 180, sets: 3, description: '30 seconds hold, 30 seconds rest' },
-  { name: 'Pelvic tilts and bridges', duration: 240, sets: 4, description: '15 reps per set' },
-  { name: 'Gentle spinal twists', duration: 180, sets: 1, description: '3 minutes each side' }
+  {
+    name: 'Cat-cow flows',
+    workSeconds: 180,
+    sets: 2,
+    restSeconds: 20,
+    repsText: '10-12 reps',
+    description: 'Gentle mobility for spinal and hip comfort.'
+  },
+  {
+    name: 'Modified plank holds',
+    workSeconds: 45,
+    sets: 3,
+    restSeconds: 25,
+    repsText: '45 sec hold',
+    description: 'Core engagement with controlled breathing.'
+  },
+  {
+    name: 'Pelvic tilts and bridges',
+    workSeconds: 50,
+    sets: 3,
+    restSeconds: 25,
+    repsText: '10-12 reps',
+    description: 'Glute and core support with low joint stress.'
+  },
+  {
+    name: 'Gentle spinal twists',
+    workSeconds: 120,
+    sets: 1,
+    restSeconds: 0,
+    repsText: '1 round',
+    description: 'Cool down and release tension.'
+  }
 ];
 
-export function WorkoutActiveScreen({ onExit, onComplete, onChat, workoutPlan }: WorkoutActiveScreenProps) {
+function phaseDefaults(phase?: string): { sets: number; workSeconds: number; restSeconds: number; repsText: string } {
+  switch ((phase || '').toLowerCase()) {
+    case 'menstrual':
+      return { sets: 2, workSeconds: 40, restSeconds: 30, repsText: '8-10 reps' };
+    case 'ovulatory':
+      return { sets: 4, workSeconds: 50, restSeconds: 20, repsText: '10-12 reps' };
+    case 'follicular':
+      return { sets: 3, workSeconds: 45, restSeconds: 20, repsText: '10-12 reps' };
+    case 'luteal':
+    default:
+      return { sets: 3, workSeconds: 45, restSeconds: 30, repsText: '10-12 reps' };
+  }
+}
+
+function parseExercise(exerciseText: string, phase?: string): WorkoutExercise {
+  const defaults = phaseDefaults(phase);
+  const text = exerciseText.trim();
+  const lower = text.toLowerCase();
+
+  const xPattern = text.match(/(\d+)\s*[xX]\s*(\d+)/);
+  const setsOfPattern = text.match(/(\d+)\s*sets?\s*(?:of)?\s*(\d+)/i);
+  const setsPattern = text.match(/(\d+)\s*sets?/i);
+  const repsPattern = text.match(/(\d+)\s*reps?/i);
+  const timedPattern = text.match(/(\d+)\s*(sec|secs|second|seconds|min|mins|minute|minutes)/i);
+
+  let sets = defaults.sets;
+  let workSeconds = defaults.workSeconds;
+  const restSeconds = defaults.restSeconds;
+  let repsText = defaults.repsText;
+
+  if (timedPattern) {
+    const value = Number(timedPattern[1]);
+    const unit = timedPattern[2].toLowerCase();
+    workSeconds = unit.startsWith('min') ? value * 60 : value;
+    sets = setsPattern ? Math.max(1, Number(setsPattern[1])) : 1;
+    repsText = `${value} ${unit.startsWith('min') ? 'min' : 'sec'}`;
+  } else if (xPattern) {
+    sets = Math.max(1, Number(xPattern[1]));
+    repsText = `${xPattern[2]} reps`;
+  } else if (setsOfPattern) {
+    sets = Math.max(1, Number(setsOfPattern[1]));
+    repsText = `${setsOfPattern[2]} reps`;
+  } else {
+    if (setsPattern) {
+      sets = Math.max(1, Number(setsPattern[1]));
+    }
+
+    if (repsPattern) {
+      repsText = `${repsPattern[1]} reps`;
+    }
+  }
+
+  if (/(breath|mobility|stretch|cool\s*down|walk)/i.test(lower) && !timedPattern) {
+    sets = 1;
+    workSeconds = 120;
+    repsText = '1 round';
+  }
+
+  return {
+    name: text,
+    workSeconds,
+    sets,
+    restSeconds,
+    repsText,
+    description: `Perform ${repsText} for ${sets} set${sets > 1 ? 's' : ''}.`
+  };
+}
+
+export function WorkoutActiveScreen({ onExit, onComplete, onChat, workoutPlan, currentPhase }: WorkoutActiveScreenProps) {
   const exercises = useMemo(() => {
     if (!workoutPlan?.exercises?.length) {
       return defaultExercises;
     }
 
-    const planExercises = workoutPlan.exercises.map((exercise) => ({
-      name: exercise,
-      duration: 180,
-      sets: 1,
-      description: 'Gemma-selected movement for today.'
-    }));
+    const planExercises = workoutPlan.exercises.map((exercise) => parseExercise(exercise, currentPhase));
 
     if (workoutPlan.warmup) {
       return [
         {
           name: 'Warmup',
-          duration: 180,
+          workSeconds: 180,
           sets: 1,
+          restSeconds: 0,
+          repsText: '3 min prep',
           description: workoutPlan.warmup
         },
         ...planExercises
@@ -47,61 +155,86 @@ export function WorkoutActiveScreen({ onExit, onComplete, onChat, workoutPlan }:
     }
 
     return planExercises;
-  }, [workoutPlan]);
+  }, [workoutPlan, currentPhase]);
 
   const [currentExercise, setCurrentExercise] = useState(0);
   const [currentSet, setCurrentSet] = useState(1);
-  const [timeRemaining, setTimeRemaining] = useState(exercises[0].duration);
+  const [timeRemaining, setTimeRemaining] = useState(exercises[0].workSeconds);
   const [isPaused, setIsPaused] = useState(false);
   const [isResting, setIsResting] = useState(false);
   const [sessionStarted, setSessionStarted] = useState(false);
   const [completedExercises, setCompletedExercises] = useState<number[]>([]);
+  const [sessionStartedAt, setSessionStartedAt] = useState<number | null>(null);
 
   useEffect(() => {
     setCurrentExercise(0);
     setCurrentSet(1);
-    setTimeRemaining(exercises[0]?.duration || 180);
+    setTimeRemaining(exercises[0]?.workSeconds || 180);
     setIsPaused(false);
     setIsResting(false);
     setSessionStarted(false);
     setCompletedExercises([]);
+    setSessionStartedAt(null);
   }, [exercises]);
 
+  const completeSession = (finalCompletedCount: number) => {
+    const now = Date.now();
+    const elapsedSeconds = sessionStartedAt
+      ? Math.max(1, Math.round((now - sessionStartedAt) / 1000))
+      : 0;
+
+    onComplete({
+      elapsedSeconds,
+      completedExercises: Math.min(finalCompletedCount, totalExercises),
+      totalExercises,
+      phase: currentPhase || 'Unknown'
+    });
+  };
+
   useEffect(() => {
-    if (!sessionStarted) {
+    if (!sessionStarted || isPaused) {
       return;
     }
 
-    if (!isPaused && timeRemaining > 0) {
-      const timer = setInterval(() => {
-        setTimeRemaining((prev) => prev - 1);
-      }, 1000);
-      return () => clearInterval(timer);
-    } else if (timeRemaining === 0) {
+    if (timeRemaining === 0) {
       handleExerciseComplete();
+      return;
     }
-  }, [timeRemaining, isPaused]);
+
+    const timer = setInterval(() => {
+      setTimeRemaining((prev) => Math.max(0, prev - 1));
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [sessionStarted, isPaused, timeRemaining, isResting, currentExercise, currentSet]);
 
   const handleExerciseComplete = () => {
     const exercise = exercises[currentExercise];
 
+    if (isResting) {
+      setIsResting(false);
+      setTimeRemaining(exercise.workSeconds);
+      return;
+    }
+
     if (currentSet < exercise.sets) {
       setIsResting(true);
       setCurrentSet(currentSet + 1);
-      setTimeRemaining(30); // 30 second rest
+      setTimeRemaining(exercise.restSeconds || 20);
     } else if (currentExercise < exercises.length - 1) {
       setCompletedExercises((prev) =>
         prev.includes(currentExercise) ? prev : [...prev, currentExercise]
       );
       setCurrentExercise(currentExercise + 1);
       setCurrentSet(1);
-      setTimeRemaining(exercises[currentExercise + 1].duration);
+      setTimeRemaining(exercises[currentExercise + 1].workSeconds);
       setIsResting(false);
     } else {
-      setCompletedExercises((prev) =>
-        prev.includes(currentExercise) ? prev : [...prev, currentExercise]
-      );
-      onComplete();
+      setCompletedExercises((prev) => {
+        const next = prev.includes(currentExercise) ? prev : [...prev, currentExercise];
+        completeSession(next.length);
+        return next;
+      });
     }
   };
 
@@ -113,10 +246,14 @@ export function WorkoutActiveScreen({ onExit, onComplete, onChat, workoutPlan }:
     if (currentExercise < exercises.length - 1) {
       setCurrentExercise(currentExercise + 1);
       setCurrentSet(1);
-      setTimeRemaining(exercises[currentExercise + 1].duration);
+      setTimeRemaining(exercises[currentExercise + 1].workSeconds);
       setIsResting(false);
     } else {
-      onComplete();
+      setCompletedExercises((prev) => {
+        const next = prev.includes(currentExercise) ? prev : [...prev, currentExercise];
+        completeSession(next.length);
+        return next;
+      });
     }
   };
 
@@ -165,7 +302,7 @@ export function WorkoutActiveScreen({ onExit, onComplete, onChat, workoutPlan }:
                     <p className="text-xs text-[var(--flowfit-text-secondary)]">{item.description}</p>
                   </div>
                   <span className="text-xs text-[var(--flowfit-text-secondary)] font-['JetBrains_Mono']">
-                    {formatTime(item.duration)}
+                    {item.sets} x {item.repsText}
                   </span>
                 </div>
               </div>
@@ -177,6 +314,9 @@ export function WorkoutActiveScreen({ onExit, onComplete, onChat, workoutPlan }:
           onClick={() => {
             setSessionStarted(true);
             setIsPaused(false);
+            if (!sessionStartedAt) {
+              setSessionStartedAt(Date.now());
+            }
           }}
           className="w-full px-6 py-4 rounded-xl text-white bg-[var(--flowfit-sage)] min-h-[44px] mt-4"
         >
@@ -222,7 +362,7 @@ export function WorkoutActiveScreen({ onExit, onComplete, onChat, workoutPlan }:
             <div className="text-6xl font-['JetBrains_Mono'] mb-4">{formatTime(timeRemaining)}</div>
             <h2 className="mb-2 text-white">Rest</h2>
             <p className="text-white/80 text-center">
-              Next: {exercises[currentExercise].name}
+              Next: {exercises[currentExercise].name} (Set {currentSet} of {exercise.sets})
             </p>
           </>
         ) : (
@@ -241,6 +381,10 @@ export function WorkoutActiveScreen({ onExit, onComplete, onChat, workoutPlan }:
 
             <h1 className="mb-2 text-white text-center">{exercise.name}</h1>
             <p className="text-white/80 mb-6 text-center">{exercise.description}</p>
+
+            <div className="text-white/90 mb-2 font-['JetBrains_Mono']">
+              Target: {exercise.repsText}
+            </div>
 
             {exercise.sets > 1 && (
               <div className="text-white/90 mb-4 font-['JetBrains_Mono']">

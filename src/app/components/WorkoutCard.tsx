@@ -4,7 +4,6 @@ interface WorkoutCardProps {
   name: string;
   duration: string;
   intensity: string;
-  phase: string;
   reason: string;
   exercises: string[];
   warmup?: string;
@@ -17,7 +16,6 @@ export function WorkoutCard({
   name,
   duration,
   intensity,
-  phase,
   reason,
   exercises,
   warmup,
@@ -59,9 +57,6 @@ export function WorkoutCard({
         </span>
         <span className="px-3 py-1 bg-[var(--flowfit-off-white)] rounded-full text-sm">
           {intensity}
-        </span>
-        <span className="px-3 py-1 bg-[var(--flowfit-off-white)] rounded-full text-sm">
-          {phase}
         </span>
       </div>
 

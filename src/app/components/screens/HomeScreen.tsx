@@ -40,6 +40,7 @@ export function HomeScreen({
   const [homeInsights, setHomeInsights] = useState<HomeInsights | null>(initialInsights || null);
   const [isInsightsLoading, setIsInsightsLoading] = useState(false);
   const [insightsError, setInsightsError] = useState<string | null>(null);
+  const [refreshRequestCount, setRefreshRequestCount] = useState(0);
 
   useEffect(() => {
     if (initialInsights) {
@@ -52,7 +53,7 @@ export function HomeScreen({
     let isActive = true;
 
     const loadHomeInsights = async () => {
-      if (!energyLevel && initialInsights) {
+      if (!energyLevel && initialInsights && refreshRequestCount === 0) {
         setHomeInsights(initialInsights);
         setInsightsError(null);
         onInsightsLoaded?.(initialInsights);
@@ -106,20 +107,53 @@ export function HomeScreen({
     cycleContext?.cycleLength,
     dataSource,
     goals,
+    refreshRequestCount,
     initialInsights,
     onInsightsLoaded
   ]);
 
-  if (isInsightsLoading) {
+  if (isInsightsLoading && !homeInsights) {
     return (
       <div className="flex flex-col h-full">
         <div className="flex-1 flex items-center justify-center px-6">
           <div className="text-center">
-            <div className="w-12 h-12 mx-auto mb-4 rounded-full border-4 border-[var(--flowfit-off-white)] border-t-[var(--flowfit-sage)] animate-spin" />
-            <h3 className="mb-1">Preparing your cycle-aware plan</h3>
-            <p className="text-sm text-[var(--flowfit-text-secondary)]">
-              Gemma is creating your personalized home insights.
-            </p>
+            <div className="w-20 h-20 mx-auto mb-4">
+              <svg viewBox="0 0 200 200" className="w-full h-full">
+                <circle
+                  cx="100"
+                  cy="100"
+                  r="80"
+                  fill="var(--flowfit-sage)"
+                  opacity="0.1"
+                  className="flowfit-heartbeat-ring flowfit-heartbeat-ring-1"
+                />
+                <circle
+                  cx="100"
+                  cy="100"
+                  r="60"
+                  fill="var(--phase-follicular)"
+                  opacity="0.15"
+                  className="flowfit-heartbeat-ring flowfit-heartbeat-ring-2"
+                />
+                <circle
+                  cx="100"
+                  cy="100"
+                  r="40"
+                  fill="var(--phase-ovulatory)"
+                  opacity="0.2"
+                  className="flowfit-heartbeat-ring flowfit-heartbeat-ring-3"
+                />
+                <circle
+                  cx="100"
+                  cy="100"
+                  r="20"
+                  fill="var(--flowfit-terracotta)"
+                  opacity="0.3"
+                  className="flowfit-heartbeat-ring flowfit-heartbeat-ring-4"
+                />
+              </svg>
+            </div>
+            <h3 className="mb-1">Gemma is preparing your personalized cycle-aware plan</h3>
           </div>
         </div>
       </div>
@@ -169,33 +203,40 @@ export function HomeScreen({
 
           {/* Weekly Stats */}
           <div className="grid grid-cols-3 gap-3">
-            <div className="bg-white p-4 rounded-xl">
+            <div className="bg-white p-4 rounded-xl min-h-[112px] flex flex-col">
               <div className="flex items-center gap-2 mb-2">
                 <Flame size={18} className="text-[var(--flowfit-terracotta)]" />
                 <span className="text-xs text-[var(--flowfit-text-secondary)]">Streak</span>
               </div>
-              <div className="font-['JetBrains_Mono'] text-2xl">{homeInsights?.stats.streakDays ?? '--'}</div>
-              <span className="text-xs text-[var(--flowfit-text-secondary)]">days</span>
+              <div className="font-['JetBrains_Mono'] text-2xl leading-none mt-auto">{homeInsights?.stats.streakDays ?? '--'}</div>
+              <span className="text-xs text-[var(--flowfit-text-secondary)] mt-1">days</span>
             </div>
 
-            <div className="bg-white p-4 rounded-xl">
+            <div className="bg-white p-4 rounded-xl min-h-[112px] flex flex-col">
               <div className="flex items-center gap-2 mb-2">
                 <TrendingUp size={18} className="text-[var(--flowfit-sage)]" />
                 <span className="text-xs text-[var(--flowfit-text-secondary)]">This week</span>
               </div>
-              <div className="font-['JetBrains_Mono'] text-2xl">{homeInsights?.stats.workoutsThisWeek ?? '--'}</div>
-              <span className="text-xs text-[var(--flowfit-text-secondary)]">workouts</span>
+              <div className="font-['JetBrains_Mono'] text-2xl leading-none mt-auto">{homeInsights?.stats.workoutsThisWeek ?? '--'}</div>
+              <span className="text-xs text-[var(--flowfit-text-secondary)] mt-1">workouts</span>
             </div>
 
-            <div className="bg-white p-4 rounded-xl">
+            <div className="bg-white p-4 rounded-xl min-h-[112px] flex flex-col">
               <div className="flex items-center gap-2 mb-2">
                 <Award size={18} className="text-[var(--phase-ovulatory)]" />
                 <span className="text-xs text-[var(--flowfit-text-secondary)]">Level</span>
               </div>
-              <div className="font-['JetBrains_Mono'] text-2xl">{homeInsights?.stats.levelProgress ?? '--'}</div>
-              <span className="text-xs text-[var(--flowfit-text-secondary)]">progress</span>
+              <div className="font-['JetBrains_Mono'] text-2xl leading-none mt-auto">{homeInsights?.stats.levelProgress ?? '--'}</div>
+              <span className="text-xs text-[var(--flowfit-text-secondary)] mt-1">progress</span>
             </div>
           </div>
+
+          {insightsError && (
+            <div className="p-4 rounded-xl bg-red-50 border border-red-200">
+              <p className="text-xs font-semibold text-red-600 mb-1">Gemma Error</p>
+              <p className="text-sm text-red-700 break-words">{insightsError}</p>
+            </div>
+          )}
 
           {homeInsights && (
             <PhaseCard
@@ -205,12 +246,6 @@ export function HomeScreen({
               description={homeInsights.phaseDescription}
               energyLevel={energyLevel ?? 3}
             />
-          )}
-
-          {insightsError && (
-            <div className="p-3 rounded-lg bg-red-50 border border-red-200">
-              <p className="text-sm text-red-700">{insightsError}</p>
-            </div>
           )}
 
           <div>
@@ -235,7 +270,6 @@ export function HomeScreen({
               name={homeInsights?.recommendation.name || (isInsightsLoading ? 'Loading recommendation...' : 'Recommendation unavailable')}
               duration={homeInsights?.recommendation.duration || '--'}
               intensity={homeInsights?.recommendation.intensity || '--'}
-              phase={homeInsights?.recommendation.phase || 'Current phase'}
               reason={
                 homeInsights?.recommendation.reason ||
                 (isInsightsLoading
@@ -252,6 +286,7 @@ export function HomeScreen({
 
                 onNavigate('workout-active');
               }}
+              onRefresh={() => setRefreshRequestCount((prev) => prev + 1)}
             />
           </div>
 
@@ -279,12 +314,6 @@ export function HomeScreen({
             </div>
           </div>
 
-          <div className="p-4 bg-[var(--flowfit-off-white)] rounded-xl">
-            <h4 className="mb-2">Phase tip</h4>
-            <p className="text-sm text-[var(--flowfit-text-secondary)]">
-              {homeInsights?.phaseTip || (isInsightsLoading ? 'Gemma is generating your phase tip...' : 'No phase tip available.')}
-            </p>
-          </div>
         </div>
       </div>
 
