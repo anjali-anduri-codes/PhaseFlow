@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { PhaseCard } from '../PhaseCard';
 import { EnergyCheckIn } from '../EnergyCheckIn';
 import { WorkoutCard } from '../WorkoutCard';
-import { MessageCircle, TrendingUp, Flame, Award, Settings } from 'lucide-react';
-import { getHomeInsights, HomeInsights } from '../../services/gemma';
+import { MessageCircle, TrendingUp, Flame, Award } from 'lucide-react';
+import { getHomeInsights, HomeInsights, WorkoutRecommendation } from '../../services/gemma';
 import { BottomNav } from '../BottomNav';
 
 interface HomeScreenProps {
@@ -13,10 +13,15 @@ interface HomeScreenProps {
   onOpenCycleSetup?: () => void;
   cycleContext?: {
     lastCycleStartDate: string;
+    lastPeriodFrom: string;
+    lastPeriodTo: string;
     cycleLength: number;
   } | null;
+  userName?: string;
   goals?: string[];
+  initialInsights?: HomeInsights | null;
   onInsightsLoaded?: (insights: HomeInsights) => void;
+  onStartWorkout?: (recommendation: WorkoutRecommendation) => void;
 }
 
 export function HomeScreen({
@@ -25,25 +30,45 @@ export function HomeScreen({
   showCycleSetupPrompt = false,
   onOpenCycleSetup,
   cycleContext,
+  userName,
   goals = [],
-  onInsightsLoaded
+  initialInsights,
+  onInsightsLoaded,
+  onStartWorkout
 }: HomeScreenProps) {
   const [energyLevel, setEnergyLevel] = useState<number | undefined>(undefined);
-  const [homeInsights, setHomeInsights] = useState<HomeInsights | null>(null);
+  const [homeInsights, setHomeInsights] = useState<HomeInsights | null>(initialInsights || null);
   const [isInsightsLoading, setIsInsightsLoading] = useState(false);
   const [insightsError, setInsightsError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (initialInsights) {
+      setHomeInsights(initialInsights);
+      setInsightsError(null);
+    }
+  }, [initialInsights]);
 
   useEffect(() => {
     let isActive = true;
 
     const loadHomeInsights = async () => {
+      if (!energyLevel && initialInsights) {
+        setHomeInsights(initialInsights);
+        setInsightsError(null);
+        onInsightsLoaded?.(initialInsights);
+        return;
+      }
+
       setIsInsightsLoading(true);
       setInsightsError(null);
 
       try {
         const result = await getHomeInsights({
           energyRating: energyLevel ?? 3,
+          userName,
           lastCycleStartDate: cycleContext?.lastCycleStartDate,
+          lastPeriodFrom: cycleContext?.lastPeriodFrom,
+          lastPeriodTo: cycleContext?.lastPeriodTo,
           cycleLength: cycleContext?.cycleLength,
           goals,
           dataSource
@@ -72,40 +97,43 @@ export function HomeScreen({
     return () => {
       isActive = false;
     };
-  }, [energyLevel, cycleContext?.lastCycleStartDate, cycleContext?.cycleLength, dataSource, goals, onInsightsLoaded]);
+  }, [
+    energyLevel,
+    userName,
+    cycleContext?.lastCycleStartDate,
+    cycleContext?.lastPeriodFrom,
+    cycleContext?.lastPeriodTo,
+    cycleContext?.cycleLength,
+    dataSource,
+    goals,
+    initialInsights,
+    onInsightsLoaded
+  ]);
+
+  if (isInsightsLoading) {
+    return (
+      <div className="flex flex-col h-full">
+        <div className="flex-1 flex items-center justify-center px-6">
+          <div className="text-center">
+            <div className="w-12 h-12 mx-auto mb-4 rounded-full border-4 border-[var(--flowfit-off-white)] border-t-[var(--flowfit-sage)] animate-spin" />
+            <h3 className="mb-1">Preparing your cycle-aware plan</h3>
+            <p className="text-sm text-[var(--flowfit-text-secondary)]">
+              Gemma is creating your personalized home insights.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-auto pb-20">
         <div className="p-6 space-y-6">
           <div className="pt-8">
-            <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-3">
-                <div
-                  className="flowfit-rotating-icon flex items-center justify-center w-9 h-9 rounded-xl"
-                  style={{
-                    backgroundColor: 'var(--flowfit-off-white)',
-                    color: 'var(--flowfit-sage)',
-                    animation: 'flowfit-rotate 3.5s linear infinite'
-                  }}
-                  aria-label="FlowFit app icon"
-                >
-                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                    <circle cx="10" cy="10" r="8" fill="currentColor" opacity="0.12" />
-                    <path
-                      d="M10 3.5c2.3 1.2 4.7 3.2 4.1 6.3-.4 2.2-2.2 4-4.1 5.7-1.9-1.7-3.7-3.5-4.1-5.7-.6-3.1 1.8-5.1 4.1-6.3Z"
-                      fill="currentColor"
-                    />
-                  </svg>
-                </div>
-                <h1>Ready to train?</h1>
-              </div>
-              <button
-                onClick={() => onNavigate('settings')}
-                className="p-2 rounded-full hover:bg-white transition-colors"
-              >
-                <Settings size={20} className="text-[var(--flowfit-text-secondary)]" />
-              </button>
+            <div className="flex items-center gap-3 mb-1">
+
+              <h1>{userName ? `${userName}, ready to train?` : 'Ready to train?'}</h1>
             </div>
             <div className="flex items-center gap-2 font-['JetBrains_Mono']">
               <span className="text-[var(--flowfit-text-secondary)]">
@@ -186,7 +214,10 @@ export function HomeScreen({
           )}
 
           <div>
-            <h4 className="mb-3">How do you feel today?</h4>
+            <h4 className="mb-1">How do you feel today?</h4>
+            <p className="text-xs text-[var(--flowfit-text-secondary)] mb-3">
+              Gemma uses this check-in to personalize your workout recommendation.
+            </p>
             <EnergyCheckIn selectedLevel={energyLevel} onSelect={setEnergyLevel} />
           </div>
 
@@ -213,7 +244,14 @@ export function HomeScreen({
               }
               exercises={homeInsights?.recommendation.exercises || ['Check your Gemma API setup and retry.']}
               warmup={homeInsights?.recommendation.warmup || 'No warmup available'}
-              onStart={() => onNavigate('workout-active')}
+              onStart={() => {
+                if (homeInsights?.recommendation) {
+                  onStartWorkout?.(homeInsights.recommendation);
+                  return;
+                }
+
+                onNavigate('workout-active');
+              }}
             />
           </div>
 

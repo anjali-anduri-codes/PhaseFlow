@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { WelcomeScreen } from './components/screens/WelcomeScreen';
 import { DataSourceScreen } from './components/screens/DataSourceScreen';
+import { NameEntryScreen } from './components/screens/NameEntryScreen';
+import { AboutYouIntroScreen } from './components/screens/AboutYouIntroScreen';
 import { CycleDatesScreen } from './components/screens/CycleDatesScreen';
 import { GoogleAuthScreen } from './components/screens/GoogleAuthScreen';
 import { GoogleFitConsentScreen } from './components/screens/GoogleFitConsentScreen';
@@ -15,7 +17,12 @@ import { WorkoutsLibraryScreen } from './components/screens/WorkoutsLibraryScree
 import { WorkoutActiveScreen } from './components/screens/WorkoutActiveScreen';
 import { WorkoutCompleteScreen } from './components/screens/WorkoutCompleteScreen';
 import { GemmaChatScreen } from './components/screens/GemmaChatScreen';
-import { HomeInsights, parseWorkoutLog, WorkoutLogAnalysis } from './services/gemma';
+import {
+  HomeInsights,
+  parseWorkoutLog,
+  WorkoutLogAnalysis,
+  WorkoutRecommendation
+} from './services/gemma';
 import {
   clearGoogleNeedsManualCycleSetup,
   getGoogleNeedsManualCycleSetup,
@@ -31,6 +38,8 @@ type Screen =
   | 'google-auth'
   | 'google-fit-consent'
   | 'google-fit-sync'
+  | 'name-entry'
+  | 'about-you-intro'
   | 'cycle-dates'
   | 'cycle-dates-quick'
   | 'goals'
@@ -56,12 +65,16 @@ export default function App() {
   const [lastWorkoutLogText, setLastWorkoutLogText] = useState('');
   const [lastWorkoutAnalysis, setLastWorkoutAnalysis] = useState<WorkoutLogAnalysis | null>(null);
   const [workoutAnalysisError, setWorkoutAnalysisError] = useState<string | null>(null);
+  const [userName, setUserName] = useState('');
   const [onboardingCycle, setOnboardingCycle] = useState<{
     lastCycleStartDate: string;
+    lastPeriodFrom: string;
+    lastPeriodTo: string;
     cycleLength: number;
   } | null>(null);
   const [onboardingGoals, setOnboardingGoals] = useState<string[]>([]);
   const [latestHomeInsights, setLatestHomeInsights] = useState<HomeInsights | null>(null);
+  const [activeWorkoutPlan, setActiveWorkoutPlan] = useState<WorkoutRecommendation | null>(null);
 
   const handleNavigate = (screen: string) => {
     setCurrentScreen(screen as Screen);
@@ -92,6 +105,34 @@ export default function App() {
     }
   };
 
+  const ensureWorkoutPlan = async (): Promise<WorkoutRecommendation | null> => {
+    if (latestHomeInsights?.recommendation) {
+      return latestHomeInsights.recommendation;
+    }
+
+    if (!onboardingCycle) {
+      return null;
+    }
+
+    try {
+      const insights = await getHomeInsights({
+        energyRating: 3,
+        userName,
+        lastCycleStartDate: onboardingCycle.lastCycleStartDate,
+        lastPeriodFrom: onboardingCycle.lastPeriodFrom,
+        lastPeriodTo: onboardingCycle.lastPeriodTo,
+        cycleLength: onboardingCycle.cycleLength,
+        goals: onboardingGoals,
+        dataSource: selectedDataSource
+      });
+
+      setLatestHomeInsights(insights);
+      return insights.recommendation;
+    } catch {
+      return null;
+    }
+  };
+
   const renderScreen = () => {
     switch (currentScreen) {
       case 'welcome':
@@ -106,8 +147,25 @@ export default function App() {
                 setCurrentScreen('google-auth');
                 return;
               }
-              setCurrentScreen('cycle-dates');
+              setCurrentScreen('name-entry');
             }}
+          />
+        );
+      case 'name-entry':
+        return (
+          <NameEntryScreen
+            initialName={userName}
+            onNext={(name) => {
+              setUserName(name);
+              setCurrentScreen('about-you-intro');
+            }}
+          />
+        );
+      case 'about-you-intro':
+        return (
+          <AboutYouIntroScreen
+            userName={userName || 'there'}
+            onNext={() => setCurrentScreen('cycle-dates')}
           />
         );
       case 'google-auth':
@@ -128,6 +186,7 @@ export default function App() {
           <CycleDatesScreen
             onNext={(payload) => {
               setOnboardingCycle(payload);
+              setLatestHomeInsights(null);
               setCurrentScreen('goals');
             }}
           />
@@ -140,10 +199,12 @@ export default function App() {
             infoText="We could not find cycle records in Google Fit. Add this once to personalize your recommendations."
             onNext={(payload) => {
               setOnboardingCycle(payload);
+              setLatestHomeInsights(null);
               setNeedsManualCycleEntry(false);
               clearGoogleNeedsManualCycleSetup();
               setCurrentScreen('home');
             }}
+            initialUserName={userName}
           />
         );
       case 'goals':
@@ -151,6 +212,7 @@ export default function App() {
           <GoalsScreen
             onNext={(selectedGoals) => {
               setOnboardingGoals(selectedGoals);
+              setLatestHomeInsights(null);
               setCurrentScreen('home');
             }}
           />
@@ -163,15 +225,25 @@ export default function App() {
             showCycleSetupPrompt={selectedDataSource === 'google' && needsManualCycleEntry}
             onOpenCycleSetup={() => setCurrentScreen('cycle-dates-quick')}
             cycleContext={onboardingCycle}
+            userName={userName}
             goals={onboardingGoals}
+            initialInsights={latestHomeInsights}
             onInsightsLoaded={setLatestHomeInsights}
+            onStartWorkout={(recommendation) => {
+              setActiveWorkoutPlan(recommendation);
+              setCurrentScreen('workout-active');
+            }}
           />
         );
       case 'workouts-library':
         return (
           <WorkoutsLibraryScreen
             onNavigate={handleNavigate}
-            onSelectWorkout={(id) => setCurrentScreen('workout-active')}
+            onSelectWorkout={async (_id) => {
+              const plan = await ensureWorkoutPlan();
+              setActiveWorkoutPlan(plan);
+              setCurrentScreen('workout-active');
+            }}
           />
         );
       case 'workout-active':
@@ -180,6 +252,7 @@ export default function App() {
             onExit={() => setCurrentScreen('workouts-library')}
             onComplete={() => setCurrentScreen('workout-complete')}
             onChat={() => setCurrentScreen('gemma-chat')}
+            workoutPlan={activeWorkoutPlan}
           />
         );
       case 'workout-complete':
@@ -190,7 +263,16 @@ export default function App() {
           />
         );
       case 'gemma-chat':
-        return <GemmaChatScreen onBack={() => setCurrentScreen('home')} />;
+        return (
+          <GemmaChatScreen
+            onBack={() => setCurrentScreen('home')}
+            onNavigate={handleNavigate}
+            userName={userName}
+            cycleContext={onboardingCycle}
+            goals={onboardingGoals}
+            latestHomeInsights={latestHomeInsights}
+          />
+        );
       case 'workout-log-input':
         return (
           <WorkoutLogInputScreen
@@ -220,8 +302,14 @@ export default function App() {
             showCycleSetupPrompt={selectedDataSource === 'google' && needsManualCycleEntry}
             onOpenCycleSetup={() => setCurrentScreen('cycle-dates-quick')}
             cycleContext={onboardingCycle}
+            userName={userName}
             goals={onboardingGoals}
+            initialInsights={latestHomeInsights}
             onInsightsLoaded={setLatestHomeInsights}
+            onStartWorkout={(recommendation) => {
+              setActiveWorkoutPlan(recommendation);
+              setCurrentScreen('workout-active');
+            }}
           />
         );
     }

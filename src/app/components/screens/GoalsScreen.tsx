@@ -48,9 +48,18 @@ export function GoalsScreen({ onNext }: GoalsScreenProps) {
         </div>
       </div>
 
-      <PrimaryButton onClick={() => onNext(selectedGoals)} disabled={selectedGoals.length === 0}>
-        Let's go
-      </PrimaryButton>
+      <div className="space-y-2">
+        <button
+          onClick={() => onNext([])}
+          className="w-full px-4 py-2 text-[var(--flowfit-text-secondary)] hover:bg-[var(--flowfit-off-white)] rounded-lg transition-colors"
+        >
+          Skip for now
+        </button>
+
+        <PrimaryButton onClick={() => onNext(selectedGoals)} disabled={selectedGoals.length === 0}>
+          Let's go
+        </PrimaryButton>
+      </div>
     </div>
   );
 }

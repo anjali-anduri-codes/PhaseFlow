@@ -3,25 +3,43 @@ import { PrimaryButton } from '../PrimaryButton';
 import { InputField } from '../InputField';
 
 interface CycleDatesScreenProps {
-  onNext: (payload: { lastCycleStartDate: string; cycleLength: number }) => void;
+  onNext: (payload: {
+    lastCycleStartDate: string;
+    lastPeriodFrom: string;
+    lastPeriodTo: string;
+    cycleLength: number;
+    userName?: string;
+  }) => void;
   title?: string;
   infoText?: string;
   continueLabel?: string;
+  requireName?: boolean;
+  initialUserName?: string;
 }
 
 export function CycleDatesScreen({
   onNext,
   title = 'When did your last cycle begin?',
   infoText = 'Not sure? Enter your best estimate — FlowFit learns over time.',
-  continueLabel = 'Continue'
+  continueLabel = 'Continue',
+  requireName = false,
+  initialUserName = ''
 }: CycleDatesScreenProps) {
-  // Set default to 5 days ago
+  // Set default to a recent period range.
   const defaultDate = new Date();
   defaultDate.setDate(defaultDate.getDate() - 5);
   const defaultDateStr = defaultDate.toISOString().split('T')[0];
+  const defaultToDate = new Date();
+  defaultToDate.setDate(defaultToDate.getDate() - 2);
+  const defaultToDateStr = defaultToDate.toISOString().split('T')[0];
 
-  const [date, setDate] = useState(defaultDateStr);
+  const [name, setName] = useState(initialUserName);
+  const [lastPeriodFrom, setLastPeriodFrom] = useState(defaultDateStr);
+  const [lastPeriodTo, setLastPeriodTo] = useState(defaultToDateStr);
   const [cycleLength, setCycleLength] = useState(28);
+
+  const isNameValid = !requireName || !!name.trim();
+  const isDateRangeValid = !!lastPeriodFrom && !!lastPeriodTo;
 
   return (
     <div className="flex flex-col h-full p-6 pt-16">
@@ -30,14 +48,36 @@ export function CycleDatesScreen({
       </div>
 
       <div className="flex-1 space-y-6">
+        {requireName && (
+          <div>
+            <InputField
+              type="text"
+              label="Your name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Enter your name"
+            />
+          </div>
+        )}
+
         <div>
-          <InputField
-            type="date"
-            label="Last cycle start date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            placeholder="DD / MM / YYYY"
-          />
+          <label className="block mb-3">Last Period</label>
+          <div className="grid grid-cols-2 gap-3">
+            <InputField
+              type="date"
+              label="From"
+              value={lastPeriodFrom}
+              onChange={(e) => setLastPeriodFrom(e.target.value)}
+              placeholder="DD / MM / YYYY"
+            />
+            <InputField
+              type="date"
+              label="To"
+              value={lastPeriodTo}
+              onChange={(e) => setLastPeriodTo(e.target.value)}
+              placeholder="DD / MM / YYYY"
+            />
+          </div>
         </div>
 
         <div>
@@ -73,7 +113,18 @@ export function CycleDatesScreen({
         </div>
       </div>
 
-      <PrimaryButton onClick={() => onNext({ lastCycleStartDate: date, cycleLength })}>
+      <PrimaryButton
+        disabled={!isNameValid || !isDateRangeValid}
+        onClick={() =>
+          onNext({
+            lastCycleStartDate: lastPeriodFrom,
+            lastPeriodFrom,
+            lastPeriodTo,
+            cycleLength,
+            userName: name.trim() || undefined
+          })
+        }
+      >
         {continueLabel}
       </PrimaryButton>
     </div>

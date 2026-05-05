@@ -8,10 +8,22 @@ interface PhaseCalendarDayProps {
 }
 
 const phaseColors = {
-  menstrual: 'rgba(184, 76, 58, 0.15)',
-  follicular: 'rgba(74, 124, 89, 0.15)',
-  ovulatory: 'rgba(92, 75, 138, 0.15)',
-  luteal: 'rgba(160, 114, 42, 0.15)'
+  menstrual: {
+    background: 'rgba(214, 90, 74, 0.24)',
+    border: 'var(--phase-menstrual)'
+  },
+  follicular: {
+    background: 'rgba(92, 154, 108, 0.24)',
+    border: 'var(--phase-follicular)'
+  },
+  ovulatory: {
+    background: 'rgba(122, 103, 184, 0.24)',
+    border: 'var(--phase-ovulatory)'
+  },
+  luteal: {
+    background: 'rgba(197, 138, 58, 0.24)',
+    border: 'var(--phase-luteal)'
+  }
 };
 
 export function PhaseCalendarDay({ day, phase, isToday, hasWorkout }: PhaseCalendarDayProps) {
@@ -22,7 +34,8 @@ export function PhaseCalendarDay({ day, phase, isToday, hasWorkout }: PhaseCalen
           isToday ? 'ring-2 ring-[var(--flowfit-sage)] ring-offset-2' : ''
         }`}
         style={{
-          backgroundColor: phase ? phaseColors[phase] : 'transparent'
+          backgroundColor: phase ? phaseColors[phase].background : 'transparent',
+          border: phase ? `1px solid ${phaseColors[phase].border}` : '1px solid transparent'
         }}
       >
         <span className="text-sm font-['JetBrains_Mono']">{day}</span>

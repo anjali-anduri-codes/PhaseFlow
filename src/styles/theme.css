@@ -10,10 +10,10 @@
   --flowfit-text-secondary: #6B6B6B;
 
   /* Phase Colors */
-  --phase-menstrual: #B84C3A;
-  --phase-follicular: #4A7C59;
-  --phase-ovulatory: #5C4B8A;
-  --phase-luteal: #A0722A;
+  --phase-menstrual: #D65A4A;
+  --phase-follicular: #5C9A6C;
+  --phase-ovulatory: #7A67B8;
+  --phase-luteal: #C58A3A;
 
   /* Font Families */
   --font-heading: 'DM Sans', sans-serif;

@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, ReactNode } from 'react';
 import { ArrowLeft, Send, Sparkles } from 'lucide-react';
 import { GemmaBadge } from '../GemmaBadge';
-import { sendChatMessage } from '../../services/gemma';
+import { HomeInsights, sendChatMessage } from '../../services/gemma';
+import { BottomNav } from '../BottomNav';
 
 interface Message {
   id: string;
@@ -12,6 +13,15 @@ interface Message {
 
 interface GemmaChatScreenProps {
   onBack: () => void;
+  onNavigate: (screen: string) => void;
+  userName?: string;
+  cycleContext?: {
+    lastPeriodFrom: string;
+    lastPeriodTo: string;
+    cycleLength: number;
+  } | null;
+  goals?: string[];
+  latestHomeInsights?: HomeInsights | null;
 }
 
 function renderInlineFormatting(text: string): ReactNode[] {
@@ -65,15 +75,26 @@ const SUGGESTED_PROMPTS = [
   'Modify my workout for lower energy',
 ];
 
-const INITIAL_MESSAGE: Message = {
-  id: '1',
-  role: 'assistant',
-  content: "Hi! I'm your cycle-aware fitness coach powered by Gemma 4. I can help you optimize workouts based on your current phase, energy levels, and goals. What would you like to know?",
-  timestamp: new Date()
-};
+function createInitialMessage(userName?: string): Message {
+  return {
+    id: '1',
+    role: 'assistant',
+    content: userName
+      ? `Hi ${userName}! I'm your cycle-aware fitness coach powered by Gemma 4. I can help you optimize workouts based on your current phase, energy levels, and goals. What would you like to know?`
+      : "Hi! I'm your cycle-aware fitness coach powered by Gemma 4. I can help you optimize workouts based on your current phase, energy levels, and goals. What would you like to know?",
+    timestamp: new Date()
+  };
+}
 
-export function GemmaChatScreen({ onBack }: GemmaChatScreenProps) {
-  const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
+export function GemmaChatScreen({
+  onBack,
+  onNavigate,
+  userName,
+  cycleContext,
+  goals = [],
+  latestHomeInsights
+}: GemmaChatScreenProps) {
+  const [messages, setMessages] = useState<Message[]>(() => [createInitialMessage(userName)]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -109,7 +130,15 @@ export function GemmaChatScreen({ onBack }: GemmaChatScreenProps) {
     setIsTyping(true);
 
     try {
-      const reply = await sendChatMessage(messageText, nextHistory);
+      const reply = await sendChatMessage(messageText, nextHistory, {
+        userName,
+        lastPeriodFrom: cycleContext?.lastPeriodFrom,
+        lastPeriodTo: cycleContext?.lastPeriodTo,
+        cycleLength: cycleContext?.cycleLength,
+        goals,
+        currentPhase: latestHomeInsights?.phase,
+        currentCycleDay: latestHomeInsights?.cycleDay
+      });
 
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -139,7 +168,7 @@ export function GemmaChatScreen({ onBack }: GemmaChatScreenProps) {
         </div>
         <h2>Chat with Gemma</h2>
         <p className="text-sm text-[var(--flowfit-text-secondary)]">
-          Your AI fitness coach
+          {userName ? `Your AI fitness coach, ${userName}` : 'Your AI fitness coach'}
         </p>
       </div>
 
@@ -212,7 +241,7 @@ export function GemmaChatScreen({ onBack }: GemmaChatScreenProps) {
 
       {/* Suggested Prompts */}
       {messages.length === 1 && (
-        <div className="px-4 pb-3">
+        <div className="px-4 pb-2">
           <div className="flex gap-2 overflow-x-auto pb-2">
             {SUGGESTED_PROMPTS.map((prompt, index) => (
               <button
@@ -229,7 +258,7 @@ export function GemmaChatScreen({ onBack }: GemmaChatScreenProps) {
       )}
 
       {/* Input */}
-      <div className="p-4 bg-white border-t border-gray-200">
+      <div className="p-4 mb-16 bg-white border-t border-gray-200">
         <div className="flex gap-2">
           <input
             type="text"
@@ -249,6 +278,8 @@ export function GemmaChatScreen({ onBack }: GemmaChatScreenProps) {
           </button>
         </div>
       </div>
+
+      <BottomNav activeScreen="gemma-chat" onNavigate={onNavigate} />
     </div>
   );
 }

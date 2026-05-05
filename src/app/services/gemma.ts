@@ -38,10 +38,23 @@ export interface HomeInsights {
 
 export interface HomeInsightsInput {
   energyRating: number;
+  userName?: string;
   lastCycleStartDate?: string;
+  lastPeriodFrom?: string;
+  lastPeriodTo?: string;
   cycleLength?: number;
   goals?: string[];
   dataSource?: 'manual' | 'google' | null;
+}
+
+export interface ChatContext {
+  userName?: string;
+  lastPeriodFrom?: string;
+  lastPeriodTo?: string;
+  cycleLength?: number;
+  goals?: string[];
+  currentPhase?: Phase;
+  currentCycleDay?: number;
 }
 
 interface WorkoutRecommendationInput {
@@ -94,20 +107,25 @@ function getApiBaseUrl(): string {
   return window.location.origin;
 }
 
+const PRIMARY_GEMMA_MODEL = 'gemma-4-31b-it' as const;
+
+function sanitizeGemmaModel(model?: string): typeof PRIMARY_GEMMA_MODEL {
+  if (model === PRIMARY_GEMMA_MODEL) {
+    return model;
+  }
+
+  return PRIMARY_GEMMA_MODEL;
+}
+
 function getClientGemmaConfig(): { apiKey?: string; model: string; localOnly: boolean } {
   const apiKey = import.meta.env.VITE_GEMMA_API_KEY as string | undefined;
-  const model =
+  const configuredModel =
     (import.meta.env.VITE_GEMMA_LOCAL_MODEL as string | undefined) ||
-    (import.meta.env.VITE_GEMMA_MODEL as string | undefined) ||
-    'gemma-4-31b-it';
+    (import.meta.env.VITE_GEMMA_MODEL as string | undefined);
+  const model = sanitizeGemmaModel(configuredModel);
   const localOnly = (import.meta.env.VITE_GEMMA_LOCAL_ONLY as string | undefined) === 'true';
 
   return { apiKey, model, localOnly };
-}
-
-function getCandidateGemmaModels(preferred: string): string[] {
-  const defaults = ['gemma-4-31b-it', 'gemma-4-26b-a4b-it'];
-  return [preferred, ...defaults.filter((m) => m !== preferred)];
 }
 
 async function callGemmaViaBackend(prompt: string, options?: CallGemmaOptions): Promise<string> {
@@ -147,76 +165,57 @@ async function callGemmaDirect(
   model: string,
   options?: CallGemmaOptions
 ): Promise<string> {
-  const candidateModels = getCandidateGemmaModels(model);
-  let lastError = 'Unknown Gemma direct-call error';
-
-  for (const candidateModel of candidateModels) {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${candidateModel}:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: 'user',
-              parts: [{ text: prompt }]
-            }
-          ],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 700,
-            ...(options?.expectsJson ? { responseMimeType: 'application/json' } : {})
+  const normalizedModel = sanitizeGemmaModel(model);
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${normalizedModel}:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            role: 'user',
+            parts: [{ text: prompt }]
           }
-        })
-      }
+        ],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 700,
+          ...(options?.expectsJson ? { responseMimeType: 'application/json' } : {})
+        }
+      })
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      normalizeGemmaErrorMessage(
+        `Direct Gemma request failed (${normalizedModel}): ${await response.text()}`
+      )
     );
-
-    if (!response.ok) {
-      lastError = await response.text();
-      continue;
-    }
-
-    const data = (await response.json()) as DirectGemmaResponse;
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (text) {
-      return text;
-    }
-
-    lastError = 'Direct Gemma response did not include text';
   }
 
-  throw new Error(normalizeGemmaErrorMessage(`Direct Gemma request failed: ${lastError}`));
+  const data = (await response.json()) as DirectGemmaResponse;
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) {
+    throw new Error(`Direct Gemma response did not include text (${normalizedModel})`);
+  }
+
+  return text;
 }
 
 async function callGemma(prompt: string, options?: CallGemmaOptions): Promise<string> {
   const { apiKey, model, localOnly } = getClientGemmaConfig();
 
-  // Local-only mode is useful during frontend-only dev (`npm run dev`) without serverless runtime.
-  if (localOnly && apiKey) {
-    try {
-      return await callGemmaDirect(prompt, apiKey, model, options);
-    } catch (directError) {
-      // Still attempt backend as a rescue path in case server-side key/project has access.
-      try {
-        return await callGemmaViaBackend(prompt, options);
-      } catch {
-        throw directError;
-      }
-    }
+  // Single-request strategy: choose exactly one path, no fallback retries.
+  // Prefer direct call when a client API key exists so local/dev flows stay functional.
+  if (apiKey) {
+    return callGemmaDirect(prompt, apiKey, model, options);
   }
 
-  try {
-    return await callGemmaViaBackend(prompt, options);
-  } catch (backendError) {
-    // Graceful local fallback if backend isn't running but a browser key is configured.
-    if (apiKey) {
-      return callGemmaDirect(prompt, apiKey, model, options);
-    }
-    throw backendError;
-  }
+  return callGemmaViaBackend(prompt, options);
 }
 
 function stripCodeFence(text: string): string {
@@ -253,18 +252,31 @@ function parseJson<T>(text: string): T {
 
 export async function sendChatMessage(
   userMessage: string,
-  conversationHistory: ChatMessage[]
+  conversationHistory: ChatMessage[],
+  context?: ChatContext
 ): Promise<string> {
   const recentHistory = conversationHistory.slice(-8);
   const historyText = recentHistory
     .map((m) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
     .join('\n');
+  const userName = context?.userName?.trim();
+  const goals = context?.goals?.length ? context.goals.join(', ') : 'not specified';
+  const lastPeriodFrom = context?.lastPeriodFrom || 'not provided';
+  const lastPeriodTo = context?.lastPeriodTo || 'not provided';
+  const cycleLength = context?.cycleLength || 'not provided';
+  const currentPhase = context?.currentPhase || 'unknown';
+  const currentCycleDay = context?.currentCycleDay || 'unknown';
 
   const prompt = [
     'You are Gemma, a cycle-aware fitness coach for an inclusive health app.',
     'Give concise, supportive, practical advice.',
     'Avoid medical diagnosis. If symptoms seem severe, recommend professional care.',
     'Keep responses under 140 words unless user asks for more detail.',
+    userName ? `The user is named ${userName}. Address them by name naturally.` : 'Use a warm conversational tone.',
+    `Last period window: ${lastPeriodFrom} to ${lastPeriodTo}`,
+    `Typical cycle length: ${cycleLength}`,
+    `Current known phase/day: ${currentPhase} / ${currentCycleDay}`,
+    `User goals: ${goals}`,
     '',
     'Conversation so far:',
     historyText,
@@ -329,7 +341,10 @@ export async function getWorkoutRecommendation(
 
 export async function getHomeInsights(input: HomeInsightsInput): Promise<HomeInsights> {
   const goals = input.goals?.length ? input.goals.join(', ') : 'not specified';
+  const userName = input.userName || 'not provided';
   const lastCycleDate = input.lastCycleStartDate || 'not provided';
+  const lastPeriodFrom = input.lastPeriodFrom || 'not provided';
+  const lastPeriodTo = input.lastPeriodTo || 'not provided';
   const cycleLength = input.cycleLength || 28;
   const dataSource = input.dataSource || 'manual';
 
@@ -339,8 +354,11 @@ export async function getHomeInsights(input: HomeInsightsInput): Promise<HomeIns
     'phase must be one of: menstrual, follicular, ovulatory, luteal.',
     'stats keys: streakDays, workoutsThisWeek, levelProgress.',
     'recommendation keys: name, duration, intensity, phase, reason, exercises (4 items), warmup.',
-    `Energy rating today: ${input.energyRating}`,
+    `User name: ${userName}`,
+    `User check-in response for "How do you feel today?": energy ${input.energyRating}/5`,
     `Data source: ${dataSource}`,
+    `Last Period from: ${lastPeriodFrom}`,
+    `Last Period to: ${lastPeriodTo}`,
     `Last cycle start date: ${lastCycleDate}`,
     `Typical cycle length: ${cycleLength}`,
     `User goals: ${goals}`,
