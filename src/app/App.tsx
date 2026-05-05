@@ -30,6 +30,11 @@ import {
   getSelectedDataSource,
   setSelectedDataSource
 } from './services/googleHealth';
+import {
+  getSavedGeneratedWorkouts,
+  saveGeneratedWorkout,
+  SavedGeneratedWorkout
+} from './services/workoutLibrary';
 
 type DataSource = 'manual' | 'google' | null;
 
@@ -94,6 +99,9 @@ export default function App() {
   const [latestHomeInsights, setLatestHomeInsights] = useState<HomeInsights | null>(null);
   const [activeWorkoutPlan, setActiveWorkoutPlan] = useState<WorkoutRecommendation | null>(null);
   const [lastWorkoutSession, setLastWorkoutSession] = useState<WorkoutSessionSummary | null>(null);
+  const [savedGeneratedWorkouts, setSavedGeneratedWorkouts] = useState<SavedGeneratedWorkout[]>(() =>
+    getSavedGeneratedWorkouts()
+  );
 
   const handleNavigate = (screen: string) => {
     setCurrentScreen(screen as Screen);
@@ -264,6 +272,16 @@ export default function App() {
         return (
           <WorkoutsLibraryScreen
             onNavigate={handleNavigate}
+            savedGeneratedWorkouts={savedGeneratedWorkouts}
+            onSelectSavedWorkout={(savedId) => {
+              const selected = savedGeneratedWorkouts.find((item) => item.id === savedId);
+              if (!selected) {
+                return;
+              }
+
+              setActiveWorkoutPlan(selected.recommendation);
+              setCurrentScreen('workout-active');
+            }}
             onSelectWorkout={async (_id) => {
               const plan = await ensureWorkoutPlan();
               setActiveWorkoutPlan(plan);
@@ -302,6 +320,8 @@ export default function App() {
             goals={onboardingGoals}
             latestHomeInsights={latestHomeInsights}
             onStartWorkoutFromChat={(plan) => {
+              const saved = saveGeneratedWorkout(plan);
+              setSavedGeneratedWorkouts((prev) => [saved, ...prev].slice(0, 30));
               setActiveWorkoutPlan(plan);
               setCurrentScreen('workout-active');
             }}

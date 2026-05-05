@@ -1,10 +1,13 @@
 import { Search } from 'lucide-react';
 import { useState } from 'react';
 import { BottomNav } from '../BottomNav';
+import { SavedGeneratedWorkout } from '../../services/workoutLibrary';
 
 interface WorkoutsLibraryScreenProps {
   onNavigate: (screen: string) => void;
   onSelectWorkout: (workoutId: string) => void;
+  savedGeneratedWorkouts?: SavedGeneratedWorkout[];
+  onSelectSavedWorkout?: (savedWorkoutId: string) => void;
 }
 
 const workoutCategories = [
@@ -71,7 +74,20 @@ const workouts = [
   },
 ];
 
-export function WorkoutsLibraryScreen({ onNavigate, onSelectWorkout }: WorkoutsLibraryScreenProps) {
+function formatGeneratedDate(iso: string): string {
+  const date = new Date(iso);
+  return date.toLocaleDateString([], {
+    month: 'short',
+    day: 'numeric'
+  });
+}
+
+export function WorkoutsLibraryScreen({
+  onNavigate,
+  onSelectWorkout,
+  savedGeneratedWorkouts = [],
+  onSelectSavedWorkout
+}: WorkoutsLibraryScreenProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   const filteredWorkouts = selectedCategory
@@ -180,6 +196,33 @@ export function WorkoutsLibraryScreen({ onNavigate, onSelectWorkout }: WorkoutsL
               ))}
             </div>
           </div>
+
+          {savedGeneratedWorkouts.length > 0 && (
+            <div>
+              <h4 className="mb-3">Your workouts</h4>
+              <div className="space-y-2">
+                {savedGeneratedWorkouts.map((saved) => (
+                  <button
+                    key={saved.id}
+                    onClick={() => onSelectSavedWorkout?.(saved.id)}
+                    className="w-full p-4 bg-white rounded-xl border border-gray-200 text-left hover:border-[var(--PhaseFlow-sage)] transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <h4 className="text-sm mb-1">{saved.recommendation.name}</h4>
+                        <p className="text-xs text-[var(--PhaseFlow-text-secondary)]">
+                          {saved.recommendation.duration} · {saved.recommendation.intensity} · {saved.recommendation.phase}
+                        </p>
+                      </div>
+                      <span className="text-xs text-[var(--PhaseFlow-text-secondary)] whitespace-nowrap">
+                        Generated {formatGeneratedDate(saved.generatedAt)}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             {filteredWorkouts.map((workout) => (
