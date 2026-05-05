@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { PrimaryButton } from '../PrimaryButton';
 
 interface GoalsScreenProps {
-  onNext: () => void;
+  onNext: (selectedGoals: string[]) => void;
 }
 
 const goals = [
@@ -48,7 +48,7 @@ export function GoalsScreen({ onNext }: GoalsScreenProps) {
         </div>
       </div>
 
-      <PrimaryButton onClick={onNext} disabled={selectedGoals.length === 0}>
+      <PrimaryButton onClick={() => onNext(selectedGoals)} disabled={selectedGoals.length === 0}>
         Let's go
       </PrimaryButton>
     </div>

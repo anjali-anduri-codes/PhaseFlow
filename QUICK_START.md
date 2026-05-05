@@ -5,7 +5,7 @@ Welcome to FlowFit! Here's how to explore all the features:
 ## 🎯 First Time Setup
 
 1. **Welcome Screen** - Read the tagline and click "Get started"
-2. **Data Source** - Choose how to sync your cycle (try "Flo app")
+2. **Data Source** - Choose how to sync your cycle (Google Health, or manual)
 3. **Cycle Dates** - Enter your last cycle start date and typical cycle length
 4. **Goals** - Select your fitness goals (you can pick multiple)
 5. You're in! The app opens to the **Home** screen

@@ -3,17 +3,30 @@ import { PrimaryButton } from '../PrimaryButton';
 import { InputField } from '../InputField';
 
 interface CycleDatesScreenProps {
-  onNext: () => void;
+  onNext: (payload: { lastCycleStartDate: string; cycleLength: number }) => void;
+  title?: string;
+  infoText?: string;
+  continueLabel?: string;
 }
 
-export function CycleDatesScreen({ onNext }: CycleDatesScreenProps) {
-  const [date, setDate] = useState('');
+export function CycleDatesScreen({
+  onNext,
+  title = 'When did your last cycle begin?',
+  infoText = 'Not sure? Enter your best estimate — FlowFit learns over time.',
+  continueLabel = 'Continue'
+}: CycleDatesScreenProps) {
+  // Set default to 5 days ago
+  const defaultDate = new Date();
+  defaultDate.setDate(defaultDate.getDate() - 5);
+  const defaultDateStr = defaultDate.toISOString().split('T')[0];
+
+  const [date, setDate] = useState(defaultDateStr);
   const [cycleLength, setCycleLength] = useState(28);
 
   return (
     <div className="flex flex-col h-full p-6 pt-16">
       <div className="mb-8">
-        <h1 className="mb-2">When did your last cycle begin?</h1>
+        <h1 className="mb-2">{title}</h1>
       </div>
 
       <div className="flex-1 space-y-6">
@@ -55,13 +68,13 @@ export function CycleDatesScreen({ onNext }: CycleDatesScreenProps) {
 
         <div className="p-4 bg-[var(--flowfit-off-white)] rounded-xl">
           <p className="text-sm text-[var(--flowfit-text-secondary)]">
-            Not sure? Enter your best estimate — FlowFit learns over time.
+            {infoText}
           </p>
         </div>
       </div>
 
-      <PrimaryButton onClick={onNext} disabled={!date}>
-        Continue
+      <PrimaryButton onClick={() => onNext({ lastCycleStartDate: date, cycleLength })}>
+        {continueLabel}
       </PrimaryButton>
     </div>
   );

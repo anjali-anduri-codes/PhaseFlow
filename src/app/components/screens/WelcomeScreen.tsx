@@ -10,10 +10,38 @@ export function WelcomeScreen({ onNext }: WelcomeScreenProps) {
       <div className="flex-1 flex items-center justify-center w-full">
         <div className="relative w-64 h-64">
           <svg viewBox="0 0 200 200" className="w-full h-full">
-            <circle cx="100" cy="100" r="80" fill="var(--flowfit-sage)" opacity="0.1" />
-            <circle cx="100" cy="100" r="60" fill="var(--phase-follicular)" opacity="0.15" />
-            <circle cx="100" cy="100" r="40" fill="var(--phase-ovulatory)" opacity="0.2" />
-            <circle cx="100" cy="100" r="20" fill="var(--flowfit-terracotta)" opacity="0.3" />
+            <circle
+              cx="100"
+              cy="100"
+              r="80"
+              fill="var(--flowfit-sage)"
+              opacity="0.1"
+              className="flowfit-heartbeat-ring flowfit-heartbeat-ring-1"
+            />
+            <circle
+              cx="100"
+              cy="100"
+              r="60"
+              fill="var(--phase-follicular)"
+              opacity="0.15"
+              className="flowfit-heartbeat-ring flowfit-heartbeat-ring-2"
+            />
+            <circle
+              cx="100"
+              cy="100"
+              r="40"
+              fill="var(--phase-ovulatory)"
+              opacity="0.2"
+              className="flowfit-heartbeat-ring flowfit-heartbeat-ring-3"
+            />
+            <circle
+              cx="100"
+              cy="100"
+              r="20"
+              fill="var(--flowfit-terracotta)"
+              opacity="0.3"
+              className="flowfit-heartbeat-ring flowfit-heartbeat-ring-4"
+            />
             <path
               d="M 100 20 Q 160 60 140 120 Q 120 180 100 180 Q 80 180 60 120 Q 40 60 100 20 Z"
               fill="var(--flowfit-sage)"

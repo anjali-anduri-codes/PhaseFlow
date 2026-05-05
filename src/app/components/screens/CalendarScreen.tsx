@@ -1,5 +1,5 @@
 import { PhaseCalendarDay } from '../PhaseCalendarDay';
-import { Home, Calendar as CalendarIcon, Dumbbell, MessageCircle } from 'lucide-react';
+import { BottomNav } from '../BottomNav';
 
 interface CalendarScreenProps {
   onNavigate: (screen: string) => void;
@@ -82,35 +82,7 @@ export function CalendarScreen({ onNavigate }: CalendarScreenProps) {
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-3">
-        <div className="flex justify-around max-w-md mx-auto">
-          <button
-            onClick={() => onNavigate('home')}
-            className="flex flex-col items-center gap-1 py-2 px-4 text-[var(--flowfit-text-secondary)]"
-          >
-            <Home size={24} />
-            <span className="text-xs">Home</span>
-          </button>
-          <button
-            onClick={() => onNavigate('workouts-library')}
-            className="flex flex-col items-center gap-1 py-2 px-4 text-[var(--flowfit-text-secondary)]"
-          >
-            <Dumbbell size={24} />
-            <span className="text-xs">Workouts</span>
-          </button>
-          <button className="flex flex-col items-center gap-1 py-2 px-4 text-[var(--flowfit-sage)]">
-            <CalendarIcon size={24} />
-            <span className="text-xs">Calendar</span>
-          </button>
-          <button
-            onClick={() => onNavigate('gemma-chat')}
-            className="flex flex-col items-center gap-1 py-2 px-4 text-[var(--flowfit-text-secondary)]"
-          >
-            <MessageCircle size={24} />
-            <span className="text-xs">Chat</span>
-          </button>
-        </div>
-      </div>
+      <BottomNav activeScreen="calendar" onNavigate={onNavigate} />
     </div>
   );
 }

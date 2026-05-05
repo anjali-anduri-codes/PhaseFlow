@@ -64,7 +64,7 @@ Clean, minimal, clinical-warm. Think: high-quality health journal meets modern f
 
 ### Onboarding Flow
 1. **Welcome** - Introduction with abstract cycle illustration
-2. **Data Source Selection** - Choose between Manual, Apple Health, Google Fit, or Flo app
+2. **Data Source Selection** - Choose between Manual, Apple Health, or Google Health
 3. **Cycle Dates** - Enter last cycle start date and typical cycle length
 4. **Goals** - Multi-select fitness goals
 
@@ -92,7 +92,7 @@ Clean, minimal, clinical-warm. Think: high-quality health journal meets modern f
 - **EnergyCheckIn** - 5-button row with all selected states
 - **PhaseBadge** - Pill with phase name and color
 - **GemmaBadge** - "Powered by Gemma 4" with privacy variant
-- **FloBadge** - "Connected via Flo" with sync state
+- **HealthBadge** - Connected state for Apple Health or Google Health
 - **CycleProgressBar** - Phase-colored progress indicator
 - **PrimaryButton** - default, loading, disabled states
 - **GhostButton** - default, hover states
@@ -107,7 +107,7 @@ Clean, minimal, clinical-warm. Think: high-quality health journal meets modern f
 - **Styling:** Tailwind CSS v4
 - **Icons:** Lucide React
 - **AI Integration:** Gemma 4 (planned)
-- **Data Sync:** Flo OAuth, Supabase (optional)
+- **Data Sync:** Apple Health / Google Health, Supabase (optional)
 - **Mobile:** Optimized for 390×844px (iPhone 14 Pro)
 
 ---
@@ -158,13 +158,13 @@ The app flows through:
 See [API_INTEGRATION.md](./API_INTEGRATION.md) for detailed API documentation.
 
 **Key integrations:**
-- Flo OAuth 2.0 for cycle tracking
+- Apple Health / Google Health sync for cycle tracking
 - Gemma 4 AI for workout recommendations and log parsing
 - Optional Supabase for cross-device sync
 
 **Privacy-first approach:**
 - AI runs on-device by default
-- OAuth tokens encrypted locally
+- Health sync permissions stored securely locally
 - Cloud sync is opt-in only
 
 ---
@@ -181,8 +181,8 @@ See [API_INTEGRATION.md](./API_INTEGRATION.md) for detailed API documentation.
 ## Future Enhancements
 
 - [ ] Real Gemma 4 AI backend integration (currently mock responses)
-- [ ] Flo OAuth implementation
-- [ ] Apple Health / Google Fit sync
+- [ ] Apple Health sync
+- [ ] Google Health sync
 - [ ] Workout video demonstrations
 - [ ] Advanced progress analytics and insights
 - [ ] Community features (optional, privacy-conscious)
@@ -196,7 +196,7 @@ See [API_INTEGRATION.md](./API_INTEGRATION.md) for detailed API documentation.
 **Design & Development:** FlowFit Team  
 **Organization:** Infradian Labs  
 **AI Partner:** Google Gemma 4  
-**Cycle Data Partner:** Flo Health
+**Cycle Data Partners:** Apple Health, Google Health
 
 ---
 

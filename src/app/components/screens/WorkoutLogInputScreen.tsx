@@ -5,20 +5,31 @@ import { ArrowLeft } from 'lucide-react';
 
 interface WorkoutLogInputScreenProps {
   onBack: () => void;
-  onAnalyse: () => void;
+  onAnalyse: (payload: { workoutName: string; logText: string }) => Promise<void> | void;
+  analysisError?: string | null;
 }
 
-const examplePhrases = [
-  'Felt stronger than expected',
-  'Finished all sets',
-  'Had to take breaks',
-  'Energy was low',
-  'Great session'
-];
-
-export function WorkoutLogInputScreen({ onBack, onAnalyse }: WorkoutLogInputScreenProps) {
+export function WorkoutLogInputScreen({
+  onBack,
+  onAnalyse,
+  analysisError = null
+}: WorkoutLogInputScreenProps) {
   const [workoutName, setWorkoutName] = useState('');
   const [logText, setLogText] = useState('');
+  const [isAnalysing, setIsAnalysing] = useState(false);
+
+  const handleAnalyse = async () => {
+    if (!logText.trim() || isAnalysing) {
+      return;
+    }
+
+    setIsAnalysing(true);
+    try {
+      await onAnalyse({ workoutName, logText });
+    } finally {
+      setIsAnalysing(false);
+    }
+  };
 
   return (
     <div className="flex flex-col h-full p-6 pt-12">
@@ -33,6 +44,12 @@ export function WorkoutLogInputScreen({ onBack, onAnalyse }: WorkoutLogInputScre
       </p>
 
       <div className="flex-1 space-y-4">
+        {analysisError && (
+          <div className="p-3 rounded-lg bg-red-50 border border-red-200">
+            <p className="text-sm text-red-700">{analysisError}</p>
+          </div>
+        )}
+
         <InputField
           placeholder="Workout name"
           value={workoutName}
@@ -48,24 +65,12 @@ export function WorkoutLogInputScreen({ onBack, onAnalyse }: WorkoutLogInputScre
           />
         </div>
 
-        <div className="overflow-x-auto pb-2">
-          <div className="flex gap-2">
-            {examplePhrases.map((phrase) => (
-              <button
-                key={phrase}
-                onClick={() => setLogText((prev) => (prev ? `${prev} ${phrase}` : phrase))}
-                className="px-3 py-2 bg-white rounded-full text-sm text-[var(--flowfit-text-secondary)] border border-gray-200 whitespace-nowrap hover:border-[var(--flowfit-sage)] transition-colors"
-              >
-                {phrase}
-              </button>
-            ))}
-          </div>
-        </div>
       </div>
 
       <PrimaryButton
-        onClick={onAnalyse}
+        onClick={handleAnalyse}
         disabled={!logText.trim()}
+        variant={isAnalysing ? 'loading' : 'default'}
         phaseColor="var(--phase-ovulatory)"
       >
         Analyse with Gemma 4

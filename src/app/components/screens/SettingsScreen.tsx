@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { FloBadge } from '../FloBadge';
-import { Home, Calendar, Dumbbell, MessageCircle, ArrowLeft, Github } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ArrowLeft, Github } from 'lucide-react';
+import { GemmaStatus, getGemmaStatus } from '../../services/gemma';
+import { BottomNav } from '../BottomNav';
 
 interface SettingsScreenProps {
   onNavigate: (screen: string) => void;
@@ -9,6 +10,26 @@ interface SettingsScreenProps {
 export function SettingsScreen({ onNavigate }: SettingsScreenProps) {
   const [gemmaOnDevice, setGemmaOnDevice] = useState(true);
   const [cloudSync, setCloudSync] = useState(false);
+  const [gemmaStatus, setGemmaStatus] = useState<GemmaStatus | null>(null);
+  const [isGemmaStatusLoading, setIsGemmaStatusLoading] = useState(true);
+
+  useEffect(() => {
+    let isActive = true;
+
+    const loadGemmaStatus = async () => {
+      const status = await getGemmaStatus();
+      if (isActive) {
+        setGemmaStatus(status);
+        setIsGemmaStatusLoading(false);
+      }
+    };
+
+    void loadGemmaStatus();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
   return (
     <div className="flex flex-col h-full">
@@ -27,25 +48,20 @@ export function SettingsScreen({ onNavigate }: SettingsScreenProps) {
             <div className="space-y-3">
               <div className="p-4 bg-white rounded-xl border border-gray-200 flex items-center justify-between">
                 <div>
-                  <h4 className="mb-1">Flo app</h4>
-                  <FloBadge connected />
+                  <h4 className="mb-1">Manual entry</h4>
+                  <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm bg-[var(--flowfit-sage)] text-white">
+                    Active
+                  </span>
                 </div>
-                <button className="text-[var(--phase-menstrual)] text-sm">Disconnect</button>
+                <button className="text-[var(--flowfit-sage)] text-sm">Edit</button>
               </div>
 
-              <div className="p-4 bg-white rounded-xl border border-gray-200 opacity-50">
-                <h4 className="mb-1">Apple Health</h4>
-                <p className="text-sm text-[var(--flowfit-text-secondary)]">Not connected</p>
-              </div>
-
-              <div className="p-4 bg-white rounded-xl border border-gray-200 opacity-50">
-                <h4 className="mb-1">Google Fit</h4>
-                <p className="text-sm text-[var(--flowfit-text-secondary)]">Not connected</p>
-              </div>
-
-              <div className="p-4 bg-white rounded-xl border border-gray-200 opacity-50">
-                <h4 className="mb-1">Manual entry</h4>
-                <p className="text-sm text-[var(--flowfit-text-secondary)]">Not active</p>
+              <div className="p-4 bg-white rounded-xl border border-gray-200 flex items-center justify-between">
+                <div>
+                  <h4 className="mb-1">Google Fit</h4>
+                  <p className="text-sm text-[var(--flowfit-text-secondary)]">Not connected</p>
+                </div>
+                <button className="text-[var(--flowfit-sage)] text-sm">Connect</button>
               </div>
             </div>
           </div>
@@ -53,6 +69,35 @@ export function SettingsScreen({ onNavigate }: SettingsScreenProps) {
           <div>
             <h3 className="mb-4">AI & Privacy</h3>
             <div className="space-y-3">
+              <div className="p-4 bg-white rounded-xl border border-gray-200">
+                <div className="flex items-start justify-between mb-2 gap-3">
+                  <div className="flex-1">
+                    <h4 className="mb-1">Gemma cloud status</h4>
+                    <p className="text-sm text-[var(--flowfit-text-secondary)]">
+                      {isGemmaStatusLoading
+                        ? 'Checking backend connection...'
+                        : gemmaStatus?.message || 'Status unavailable'}
+                    </p>
+                    {!isGemmaStatusLoading && gemmaStatus?.model && (
+                      <p className="text-xs text-[var(--flowfit-text-secondary)] mt-1">
+                        Model: {gemmaStatus.model}
+                      </p>
+                    )}
+                  </div>
+                  <span
+                    className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs ${
+                      isGemmaStatusLoading
+                        ? 'bg-gray-100 text-gray-600'
+                        : gemmaStatus?.ok
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-amber-100 text-amber-800'
+                    }`}
+                  >
+                    {isGemmaStatusLoading ? 'Checking' : gemmaStatus?.ok ? 'Connected' : 'Needs setup'}
+                  </span>
+                </div>
+              </div>
+
               <div className="p-4 bg-white rounded-xl border border-gray-200">
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1">
@@ -125,35 +170,7 @@ export function SettingsScreen({ onNavigate }: SettingsScreenProps) {
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-3">
-        <div className="flex justify-around max-w-md mx-auto">
-          <button
-            onClick={() => onNavigate('home')}
-            className="flex flex-col items-center gap-1 py-2 px-4 text-[var(--flowfit-text-secondary)]"
-          >
-            <Home size={24} />
-            <span className="text-xs">Home</span>
-          </button>
-          <button
-            onClick={() => onNavigate('calendar')}
-            className="flex flex-col items-center gap-1 py-2 px-4 text-[var(--flowfit-text-secondary)]"
-          >
-            <Calendar size={24} />
-            <span className="text-xs">Calendar</span>
-          </button>
-          <button
-            onClick={() => onNavigate('workout-log-input')}
-            className="flex flex-col items-center gap-1 py-2 px-4 text-[var(--flowfit-text-secondary)]"
-          >
-            <FileText size={24} />
-            <span className="text-xs">Log</span>
-          </button>
-          <button className="flex flex-col items-center gap-1 py-2 px-4 text-[var(--flowfit-sage)]">
-            <SettingsIcon size={24} />
-            <span className="text-xs">Settings</span>
-          </button>
-        </div>
-      </div>
+      <BottomNav activeScreen="settings" onNavigate={onNavigate} />
     </div>
   );
 }

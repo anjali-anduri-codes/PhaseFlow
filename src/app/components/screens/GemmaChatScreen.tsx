@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, ReactNode } from 'react';
 import { ArrowLeft, Send, Sparkles } from 'lucide-react';
 import { GemmaBadge } from '../GemmaBadge';
+import { sendChatMessage } from '../../services/gemma';
 
 interface Message {
   id: string;
@@ -11,6 +12,50 @@ interface Message {
 
 interface GemmaChatScreenProps {
   onBack: () => void;
+}
+
+function renderInlineFormatting(text: string): ReactNode[] {
+  return text.split(/(\*\*[^*]+\*\*)/g).map((segment, index) => {
+    if (segment.startsWith('**') && segment.endsWith('**')) {
+      return <strong key={`bold-${index}`}>{segment.slice(2, -2)}</strong>;
+    }
+
+    return <span key={`text-${index}`}>{segment}</span>;
+  });
+}
+
+function renderMessageContent(content: string): ReactNode {
+  const paragraphs = content
+    .split(/\n\s*\n/g)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean);
+
+  if (!paragraphs.length) {
+    return <p className="text-sm leading-relaxed">{renderInlineFormatting(content)}</p>;
+  }
+
+  return (
+    <div className="space-y-2">
+      {paragraphs.map((paragraph, index) => {
+        const lines = paragraph.split('\n');
+
+        return (
+          <p key={`paragraph-${index}`} className="text-sm leading-relaxed">
+            {lines.map((line, lineIndex) => (
+              <span key={`line-${lineIndex}`}>
+                {renderInlineFormatting(line)}
+                {lineIndex < lines.length - 1 && <br />}
+              </span>
+            ))}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
+function formatTimestamp(timestamp: Date): string {
+  return timestamp.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 }
 
 const SUGGESTED_PROMPTS = [
@@ -31,6 +76,7 @@ export function GemmaChatScreen({ onBack }: GemmaChatScreenProps) {
   const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -41,7 +87,7 @@ export function GemmaChatScreen({ onBack }: GemmaChatScreenProps) {
     scrollToBottom();
   }, [messages]);
 
-  const handleSend = (text?: string) => {
+  const handleSend = async (text?: string) => {
     const messageText = text || input.trim();
     if (!messageText) return;
 
@@ -52,29 +98,32 @@ export function GemmaChatScreen({ onBack }: GemmaChatScreenProps) {
       timestamp: new Date()
     };
 
+    const nextHistory = [...messages, userMessage].map((m) => ({
+      role: m.role,
+      content: m.content
+    }));
+
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
+    setError(null);
     setIsTyping(true);
 
-    // Simulate AI response
-    setTimeout(() => {
-      const responses = [
-        "Based on your luteal phase and current energy level, I recommend focusing on low-impact movements today. Your progesterone is elevated, which can affect energy. Consider yoga, walking, or gentle pilates instead of high-intensity training.",
-        "Great question! During this phase, your body benefits from exercises that support hormone balance. I'd suggest: modified strength training with longer rest periods, restorative yoga, and gentle cardio like swimming or cycling.",
-        "To reduce bloating during your luteal phase, try: avoiding salt 2-3 days before your period, staying hydrated, gentle core exercises (avoid crunches), and anti-inflammatory foods like ginger and leafy greens.",
-        "I can modify your workout! Since you're feeling low energy today, let's reduce intensity by 30%, add 15-second rest periods between sets, and swap any high-impact moves for their low-impact versions. Would you like me to create a custom workout?"
-      ];
+    try {
+      const reply = await sendChatMessage(messageText, nextHistory);
 
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: responses[Math.floor(Math.random() * responses.length)],
+        content: reply,
         timestamp: new Date()
       };
 
       setMessages((prev) => [...prev, aiMessage]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to reach Gemma right now. Please try again.');
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -96,25 +145,52 @@ export function GemmaChatScreen({ onBack }: GemmaChatScreenProps) {
 
       {/* Messages */}
       <div className="flex-1 overflow-auto p-4 space-y-4">
+        {error && (
+          <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+
         {messages.map((message) => (
           <div
             key={message.id}
             className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
-            <div
-              className={`max-w-[80%] p-4 rounded-2xl ${
-                message.role === 'user'
-                  ? 'bg-[var(--flowfit-sage)] text-white'
-                  : 'bg-white text-[var(--flowfit-text-primary)]'
-              }`}
-            >
+            <div className={`max-w-[84%] ${message.role === 'user' ? 'items-end' : 'items-start'}`}>
+              <div
+                className={`text-xs mb-1 px-1 ${
+                  message.role === 'user' ? 'text-right text-[var(--flowfit-text-secondary)]' : 'text-[var(--flowfit-text-secondary)]'
+                }`}
+              >
+                {message.role === 'user' ? 'You' : 'Gemma'}
+              </div>
+
+              <div
+                className={`p-4 rounded-2xl shadow-sm ${
+                  message.role === 'user'
+                    ? 'bg-[var(--flowfit-sage)] text-white rounded-br-md'
+                    : 'bg-white text-[var(--flowfit-text-primary)] rounded-bl-md border border-gray-100'
+                }`}
+              >
               {message.role === 'assistant' && (
                 <div className="flex items-center gap-2 mb-2">
                   <Sparkles size={16} className="text-[var(--phase-ovulatory)]" />
                   <span className="text-xs text-[var(--flowfit-text-secondary)]">Gemma 4</span>
                 </div>
               )}
-              <p className="text-sm leading-relaxed">{message.content}</p>
+
+                <div className={message.role === 'user' ? 'text-white [&_strong]:font-semibold [&_strong]:text-white' : '[&_strong]:font-semibold [&_strong]:text-[var(--flowfit-text-primary)]'}>
+                  {renderMessageContent(message.content)}
+                </div>
+
+                <div
+                  className={`mt-2 text-[11px] ${
+                    message.role === 'user' ? 'text-white/80 text-right' : 'text-[var(--flowfit-text-secondary)]'
+                  }`}
+                >
+                  {formatTimestamp(message.timestamp)}
+                </div>
+              </div>
             </div>
           </div>
         ))}
@@ -142,6 +218,7 @@ export function GemmaChatScreen({ onBack }: GemmaChatScreenProps) {
               <button
                 key={index}
                 onClick={() => handleSend(prompt)}
+                disabled={isTyping}
                 className="px-4 py-2 bg-white rounded-full text-sm text-[var(--flowfit-text-primary)] border border-gray-200 whitespace-nowrap hover:border-[var(--flowfit-sage)] transition-colors"
               >
                 {prompt}
@@ -161,10 +238,11 @@ export function GemmaChatScreen({ onBack }: GemmaChatScreenProps) {
             onKeyPress={(e) => e.key === 'Enter' && handleSend()}
             placeholder="Ask about workouts, nutrition, or your cycle..."
             className="flex-1 px-4 py-3 rounded-xl bg-[var(--flowfit-off-white)] border-2 border-transparent focus:border-[var(--flowfit-sage)] transition-colors"
+            disabled={isTyping}
           />
           <button
             onClick={() => handleSend()}
-            disabled={!input.trim()}
+            disabled={!input.trim() || isTyping}
             className="p-3 rounded-xl bg-[var(--flowfit-sage)] text-white disabled:bg-gray-300 disabled:text-gray-500 transition-colors min-w-[44px]"
           >
             <Send size={20} />

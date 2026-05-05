@@ -2,13 +2,23 @@ import { PrimaryButton } from '../PrimaryButton';
 import { GhostButton } from '../GhostButton';
 import { GemmaBadge } from '../GemmaBadge';
 import { ArrowLeft } from 'lucide-react';
+import { WorkoutLogAnalysis } from '../../services/gemma';
 
 interface WorkoutLogResultScreenProps {
   onBack: () => void;
   onSave: () => void;
+  logText?: string;
+  analysis?: WorkoutLogAnalysis | null;
 }
 
-export function WorkoutLogResultScreen({ onBack, onSave }: WorkoutLogResultScreenProps) {
+export function WorkoutLogResultScreen({
+  onBack,
+  onSave,
+  logText,
+  analysis
+}: WorkoutLogResultScreenProps) {
+  const displayAnalysis: WorkoutLogAnalysis | null = analysis || null;
+
   return (
     <div className="flex flex-col h-full p-6 pt-12">
       <button onClick={onBack} className="flex items-center gap-2 mb-6 text-[var(--flowfit-sage)]">
@@ -23,7 +33,7 @@ export function WorkoutLogResultScreen({ onBack, onSave }: WorkoutLogResultScree
 
       <div className="flex-1 space-y-4">
         <div className="px-4 py-3 rounded-xl bg-gray-100 text-[var(--flowfit-text-secondary)]">
-          <p>Felt stronger than expected today, finished all sets but was pretty tired by the end</p>
+          <p>{logText || 'No workout note provided.'}</p>
         </div>
 
         <div className="p-4 bg-[var(--flowfit-off-white)] rounded-xl border-2 border-[var(--phase-ovulatory)]">
@@ -40,7 +50,9 @@ export function WorkoutLogResultScreen({ onBack, onSave }: WorkoutLogResultScree
                   <div
                     key={i}
                     className={`w-2 h-4 rounded-sm ${
-                      i < 2 ? 'bg-[var(--phase-ovulatory)]' : 'bg-gray-300'
+                      displayAnalysis && i < displayAnalysis.energyRating
+                        ? 'bg-[var(--phase-ovulatory)]'
+                        : 'bg-gray-300'
                     }`}
                   />
                 ))}
@@ -49,19 +61,23 @@ export function WorkoutLogResultScreen({ onBack, onSave }: WorkoutLogResultScree
 
             <div className="flex justify-between items-center py-2 border-b border-gray-200">
               <span className="text-sm text-[var(--flowfit-text-secondary)]">Completion</span>
-              <span className="font-['JetBrains_Mono']">100%</span>
+              <span className="font-['JetBrains_Mono']">
+                {displayAnalysis ? `${displayAnalysis.completionPercent}%` : '--'}
+              </span>
             </div>
 
             <div className="flex justify-between items-center py-2">
               <span className="text-sm text-[var(--flowfit-text-secondary)]">Mood</span>
-              <span>Accomplished but tired</span>
+              <span>{displayAnalysis ? displayAnalysis.mood : 'Unavailable'}</span>
             </div>
           </div>
 
           <div className="mt-4 p-3 bg-white rounded-lg">
             <h4 className="text-sm mb-1">What FlowFit will adjust</h4>
             <p className="text-sm text-[var(--flowfit-text-secondary)]">
-              Tomorrow's workout will include longer rest periods to support recovery.
+              {displayAnalysis
+                ? displayAnalysis.adjustment
+                : 'Gemma analysis was unavailable. Please retry from the log screen.'}
             </p>
           </div>
         </div>

@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { PrimaryButton } from '../PrimaryButton';
-import { PencilLine, Heart, Activity, Leaf } from 'lucide-react';
+import { PencilLine, Activity } from 'lucide-react';
 
 interface DataSourceScreenProps {
-  onNext: () => void;
+  onNext: (source: DataSource) => void;
 }
 
-type DataSource = 'manual' | 'apple' | 'google' | 'flo' | null;
+type DataSource = 'manual' | 'google' | null;
 
 export function DataSourceScreen({ onNext }: DataSourceScreenProps) {
-  const [selected, setSelected] = useState<DataSource>('flo');
+  const [selected, setSelected] = useState<DataSource>('manual');
 
   const sources = [
     {
@@ -19,22 +19,10 @@ export function DataSourceScreen({ onNext }: DataSourceScreenProps) {
       description: 'Track your cycle yourself'
     },
     {
-      id: 'apple' as DataSource,
-      icon: Heart,
-      label: 'Apple Health',
-      description: 'Sync from Health app'
-    },
-    {
       id: 'google' as DataSource,
       icon: Activity,
       label: 'Google Fit',
-      description: 'Connect fitness data'
-    },
-    {
-      id: 'flo' as DataSource,
-      icon: Leaf,
-      label: 'Flo app',
-      description: 'Import from Flo'
+      description: 'Connect Health Connect or Google Fit data'
     }
   ];
 
@@ -74,7 +62,13 @@ export function DataSourceScreen({ onNext }: DataSourceScreenProps) {
                 </p>
               </div>
               {selected === source.id && (
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <svg 
+                  width="24" 
+                  height="24" 
+                  viewBox="0 0 24 24" 
+                  fill="none"
+                  className="flowfit-selection-circle"
+                >
                   <circle cx="12" cy="12" r="10" fill="var(--flowfit-sage)" />
                   <path
                     d="M8 12l2 2 4-4"
@@ -90,13 +84,13 @@ export function DataSourceScreen({ onNext }: DataSourceScreenProps) {
         })}
       </div>
 
-      {selected === 'flo' && (
+      {selected === 'google' && (
         <p className="text-xs text-center text-[var(--flowfit-text-secondary)] mb-4">
-          Flo connects via secure OAuth. No password stored.
+          Google Fit sync uses secure account permissions only.
         </p>
       )}
 
-      <PrimaryButton onClick={onNext} disabled={!selected}>
+      <PrimaryButton onClick={() => selected && onNext(selected)} disabled={!selected}>
         Continue
       </PrimaryButton>
     </div>
