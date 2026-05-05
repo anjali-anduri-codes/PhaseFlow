@@ -38,8 +38,8 @@ export function GoalsScreen({ onNext }: GoalsScreenProps) {
               onClick={() => toggleGoal(goal)}
               className={`px-4 py-3 rounded-full transition-all min-h-[44px] ${
                 selectedGoals.includes(goal)
-                  ? 'bg-[var(--flowfit-sage)] text-white'
-                  : 'bg-white text-[var(--flowfit-text-primary)] border border-gray-200'
+                  ? 'bg-[var(--PhaseFlow-sage)] text-white'
+                  : 'bg-white text-[var(--PhaseFlow-text-primary)] border border-gray-200'
               }`}
             >
               {goal}
@@ -51,7 +51,7 @@ export function GoalsScreen({ onNext }: GoalsScreenProps) {
       <div className="space-y-2">
         <button
           onClick={() => onNext([])}
-          className="w-full px-4 py-2 text-[var(--flowfit-text-secondary)] hover:bg-[var(--flowfit-off-white)] rounded-lg transition-colors"
+          className="w-full px-4 py-2 text-[var(--PhaseFlow-text-secondary)] hover:bg-[var(--PhaseFlow-off-white)] rounded-lg transition-colors"
         >
           Skip for now
         </button>

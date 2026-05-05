@@ -89,7 +89,7 @@ export function CalendarScreen({ onNavigate }: CalendarScreenProps) {
           <div>
             <div className="grid grid-cols-7 gap-1 mb-2">
               {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day) => (
-                <div key={day} className="text-center text-xs text-[var(--flowfit-text-secondary)] py-2">
+                <div key={day} className="text-center text-xs text-[var(--PhaseFlow-text-secondary)] py-2">
                   {day}
                 </div>
               ))}

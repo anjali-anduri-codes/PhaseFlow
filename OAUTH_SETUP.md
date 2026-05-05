@@ -55,7 +55,7 @@ Modified `src/app/services/googleHealth.ts` to support real OAuth:
 ### Step 1: Create Google OAuth Credentials
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create new project: "FlowFit" (or your app name)
+2. Create new project: "PhaseFlow" (or your app name)
 3. Enable APIs:
    - Google Fit API
    - Google+ API
@@ -91,7 +91,7 @@ vercel env add VITE_GOOGLE_REDIRECT_URI
 vercel deploy --prod
 ```
 
-After deployment, Vercel will provide your production URL (e.g., `https://flowfit-production.vercel.app`)
+After deployment, Vercel will provide your production URL (e.g., `https://PhaseFlow-production.vercel.app`)
 
 ### Step 3: Update Frontend Configuration
 
@@ -112,7 +112,7 @@ VITE_API_BASE_URL=https://your-vercel-project.vercel.app
 2. Navigate to Data Source screen
 3. Select "Google"
 4. Sign in with your Google account
-5. Authorize FlowFit to access Google Fit data
+5. Authorize PhaseFlow to access Google Fit data
 6. Frontend receives access token and caches it
 7. Automatic cycle data sync follows
 8. Landing page shows one-time manual cycle entry prompt if no data
@@ -150,8 +150,8 @@ This starts both frontend (5173) and backend (3000) locally
 ```bash
 # .env.production (or Vercel env vars)
 VITE_GOOGLE_CLIENT_ID=YOUR_CLIENT_ID
-VITE_GOOGLE_REDIRECT_URI=https://flowfit.vercel.app/oauth/google/callback
-VITE_API_BASE_URL=https://flowfit.vercel.app
+VITE_GOOGLE_REDIRECT_URI=https://PhaseFlow.vercel.app/oauth/google/callback
+VITE_API_BASE_URL=https://PhaseFlow.vercel.app
 ```
 
 **Result:** Full end-to-end OAuth + Google Fit integration

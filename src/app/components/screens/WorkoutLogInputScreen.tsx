@@ -33,13 +33,13 @@ export function WorkoutLogInputScreen({
 
   return (
     <div className="flex flex-col h-full p-6 pt-12">
-      <button onClick={onBack} className="flex items-center gap-2 mb-6 text-[var(--flowfit-sage)]">
+      <button onClick={onBack} className="flex items-center gap-2 mb-6 text-[var(--PhaseFlow-sage)]">
         <ArrowLeft size={20} />
         <span>Log</span>
       </button>
 
       <h1 className="mb-2">How did it go?</h1>
-      <p className="text-[var(--flowfit-text-secondary)] mb-6">
+      <p className="text-[var(--PhaseFlow-text-secondary)] mb-6">
         Write naturally — our AI will extract the details.
       </p>
 
@@ -58,7 +58,7 @@ export function WorkoutLogInputScreen({
 
         <div>
           <textarea
-            className="w-full px-4 py-3 rounded-xl bg-[var(--flowfit-off-white)] border-2 border-transparent focus:border-[var(--flowfit-sage)] transition-colors min-h-[120px] resize-none"
+            className="w-full px-4 py-3 rounded-xl bg-[var(--PhaseFlow-off-white)] border-2 border-gray-200 focus:border-[var(--PhaseFlow-sage)] transition-colors min-h-[120px] resize-none"
             placeholder="e.g. Felt stronger than expected today, finished all sets..."
             value={logText}
             onChange={(e) => setLogText(e.target.value)}

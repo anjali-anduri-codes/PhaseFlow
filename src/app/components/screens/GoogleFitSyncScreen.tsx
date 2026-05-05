@@ -45,19 +45,19 @@ export function GoogleFitSyncScreen({ onContinue }: GoogleFitSyncScreenProps) {
     <div className="flex flex-col h-full p-6 pt-16">
       <div className="mb-8">
         <h1 className="mb-2">Syncing Google Fit data</h1>
-        <p className="text-[var(--flowfit-text-secondary)]">
+        <p className="text-[var(--PhaseFlow-text-secondary)]">
           We checked your Google Fit and Health Connect records.
         </p>
       </div>
 
       <div className="flex-1 space-y-4 mb-6">
         <div className="bg-white rounded-xl p-4 border border-gray-200 flex gap-3">
-          <div className="p-2 rounded-lg bg-[var(--flowfit-off-white)] text-[var(--flowfit-sage)]">
+          <div className="p-2 rounded-lg bg-[var(--PhaseFlow-off-white)] text-[var(--PhaseFlow-sage)]">
             <RefreshCw size={20} />
           </div>
           <div>
             <h4>{isSyncing ? 'Sync in progress' : 'Activity data synced'}</h4>
-            <p className="text-sm text-[var(--flowfit-text-secondary)]">
+            <p className="text-sm text-[var(--PhaseFlow-text-secondary)]">
               {isSyncing
                 ? 'Checking Google Fit and Health Connect records...'
                 : 'Steps, training load, and workout history are connected.'}
@@ -78,7 +78,7 @@ export function GoogleFitSyncScreen({ onContinue }: GoogleFitSyncScreenProps) {
             </div>
             <div>
               <h4>No cycle records found</h4>
-              <p className="text-sm text-[var(--flowfit-text-secondary)]">
+              <p className="text-sm text-[var(--PhaseFlow-text-secondary)]">
                 We will ask you once on your landing page to enter your cycle baseline manually.
               </p>
             </div>

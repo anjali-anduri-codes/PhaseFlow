@@ -123,9 +123,9 @@ export function HomeScreen({
                   cx="100"
                   cy="100"
                   r="80"
-                  fill="var(--flowfit-sage)"
+                  fill="var(--PhaseFlow-sage)"
                   opacity="0.1"
-                  className="flowfit-heartbeat-ring flowfit-heartbeat-ring-1"
+                  className="PhaseFlow-heartbeat-ring PhaseFlow-heartbeat-ring-1"
                 />
                 <circle
                   cx="100"
@@ -133,7 +133,7 @@ export function HomeScreen({
                   r="60"
                   fill="var(--phase-follicular)"
                   opacity="0.15"
-                  className="flowfit-heartbeat-ring flowfit-heartbeat-ring-2"
+                  className="PhaseFlow-heartbeat-ring PhaseFlow-heartbeat-ring-2"
                 />
                 <circle
                   cx="100"
@@ -141,15 +141,15 @@ export function HomeScreen({
                   r="40"
                   fill="var(--phase-ovulatory)"
                   opacity="0.2"
-                  className="flowfit-heartbeat-ring flowfit-heartbeat-ring-3"
+                  className="PhaseFlow-heartbeat-ring PhaseFlow-heartbeat-ring-3"
                 />
                 <circle
                   cx="100"
                   cy="100"
                   r="20"
-                  fill="var(--flowfit-terracotta)"
+                  fill="var(--PhaseFlow-terracotta)"
                   opacity="0.3"
-                  className="flowfit-heartbeat-ring flowfit-heartbeat-ring-4"
+                  className="PhaseFlow-heartbeat-ring PhaseFlow-heartbeat-ring-4"
                 />
               </svg>
             </div>
@@ -170,10 +170,10 @@ export function HomeScreen({
               <h1>{userName ? `${userName}, ready to train?` : 'Ready to train?'}</h1>
             </div>
             <div className="flex items-center gap-2 font-['JetBrains_Mono']">
-              <span className="text-[var(--flowfit-text-secondary)]">
+              <span className="text-[var(--PhaseFlow-text-secondary)]">
                 Day {homeInsights?.cycleDay ?? '--'}
               </span>
-              <span className="text-[var(--flowfit-text-secondary)]">·</span>
+              <span className="text-[var(--PhaseFlow-text-secondary)]">·</span>
               <span style={{ color: 'var(--phase-luteal)' }}>
                 {homeInsights ? `${homeInsights.phase[0].toUpperCase()}${homeInsights.phase.slice(1)} phase` : 'Phase unavailable'}
               </span>
@@ -185,7 +185,7 @@ export function HomeScreen({
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h4 className="mb-1">Complete your cycle baseline</h4>
-                  <p className="text-sm text-[var(--flowfit-text-secondary)]">
+                  <p className="text-sm text-[var(--PhaseFlow-text-secondary)]">
                     {dataSource === 'google'
                       ? 'Google Fit is connected, but no cycle data was found. Add your cycle dates once to personalize your workouts.'
                       : 'Add your cycle dates to improve recommendation accuracy.'}
@@ -193,7 +193,7 @@ export function HomeScreen({
                 </div>
                 <button
                   onClick={onOpenCycleSetup}
-                  className="px-3 py-2 rounded-lg bg-[var(--flowfit-sage)] text-white text-sm whitespace-nowrap"
+                  className="px-3 py-2 rounded-lg bg-[var(--PhaseFlow-sage)] text-white text-sm whitespace-nowrap"
                 >
                   Add now
                 </button>
@@ -205,29 +205,29 @@ export function HomeScreen({
           <div className="grid grid-cols-3 gap-3">
             <div className="bg-white p-4 rounded-xl min-h-[112px] flex flex-col">
               <div className="flex items-center gap-2 mb-2">
-                <Flame size={18} className="text-[var(--flowfit-terracotta)]" />
-                <span className="text-xs text-[var(--flowfit-text-secondary)]">Streak</span>
+                <Flame size={18} className="text-[var(--PhaseFlow-terracotta)]" />
+                <span className="text-xs text-[var(--PhaseFlow-text-secondary)]">Streak</span>
               </div>
               <div className="font-['JetBrains_Mono'] text-2xl leading-none mt-auto">{homeInsights?.stats.streakDays ?? '--'}</div>
-              <span className="text-xs text-[var(--flowfit-text-secondary)] mt-1">days</span>
+              <span className="text-xs text-[var(--PhaseFlow-text-secondary)] mt-1">days</span>
             </div>
 
             <div className="bg-white p-4 rounded-xl min-h-[112px] flex flex-col">
               <div className="flex items-center gap-2 mb-2">
-                <TrendingUp size={18} className="text-[var(--flowfit-sage)]" />
-                <span className="text-xs text-[var(--flowfit-text-secondary)]">This week</span>
+                <TrendingUp size={18} className="text-[var(--PhaseFlow-sage)]" />
+                <span className="text-xs text-[var(--PhaseFlow-text-secondary)]">This week</span>
               </div>
               <div className="font-['JetBrains_Mono'] text-2xl leading-none mt-auto">{homeInsights?.stats.workoutsThisWeek ?? '--'}</div>
-              <span className="text-xs text-[var(--flowfit-text-secondary)] mt-1">workouts</span>
+              <span className="text-xs text-[var(--PhaseFlow-text-secondary)] mt-1">workouts</span>
             </div>
 
             <div className="bg-white p-4 rounded-xl min-h-[112px] flex flex-col">
               <div className="flex items-center gap-2 mb-2">
                 <Award size={18} className="text-[var(--phase-ovulatory)]" />
-                <span className="text-xs text-[var(--flowfit-text-secondary)]">Level</span>
+                <span className="text-xs text-[var(--PhaseFlow-text-secondary)]">Level</span>
               </div>
               <div className="font-['JetBrains_Mono'] text-2xl leading-none mt-auto">{homeInsights?.stats.levelProgress ?? '--'}</div>
-              <span className="text-xs text-[var(--flowfit-text-secondary)] mt-1">progress</span>
+              <span className="text-xs text-[var(--PhaseFlow-text-secondary)] mt-1">progress</span>
             </div>
           </div>
 
@@ -250,7 +250,7 @@ export function HomeScreen({
 
           <div>
             <h4 className="mb-1">How do you feel today?</h4>
-            <p className="text-xs text-[var(--flowfit-text-secondary)] mb-3">
+            <p className="text-xs text-[var(--PhaseFlow-text-secondary)] mb-3">
               Gemma uses this check-in to personalize your workout recommendation.
             </p>
             <EnergyCheckIn selectedLevel={energyLevel} onSelect={setEnergyLevel} />
@@ -261,7 +261,7 @@ export function HomeScreen({
               <h4>Recommended for you</h4>
               <button
                 onClick={() => onNavigate('workouts-library')}
-                className="text-sm text-[var(--flowfit-sage)]"
+                className="text-sm text-[var(--PhaseFlow-sage)]"
               >
                 Browse all
               </button>
@@ -270,6 +270,7 @@ export function HomeScreen({
               name={homeInsights?.recommendation.name || (isInsightsLoading ? 'Loading recommendation...' : 'Recommendation unavailable')}
               duration={homeInsights?.recommendation.duration || '--'}
               intensity={homeInsights?.recommendation.intensity || '--'}
+              state={isInsightsLoading ? 'loading' : 'default'}
               reason={
                 homeInsights?.recommendation.reason ||
                 (isInsightsLoading
@@ -307,9 +308,9 @@ export function HomeScreen({
                 onClick={() => onNavigate('workout-log-input')}
                 className="p-4 bg-white rounded-xl border border-gray-200 text-left"
               >
-                <TrendingUp size={24} className="mb-2 text-[var(--flowfit-sage)]" />
+                <TrendingUp size={24} className="mb-2 text-[var(--PhaseFlow-sage)]" />
                 <h4 className="mb-1">Log workout</h4>
-                <p className="text-xs text-[var(--flowfit-text-secondary)]">Track your progress</p>
+                <p className="text-xs text-[var(--PhaseFlow-text-secondary)]">Track your progress</p>
               </button>
             </div>
           </div>

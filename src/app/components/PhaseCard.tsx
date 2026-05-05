@@ -56,7 +56,7 @@ export function PhaseCard({ phase, day, totalDays, description, energyLevel = 3 
         </div>
       </div>
 
-      <p className="text-[var(--flowfit-text-secondary)] mb-4">{description}</p>
+      <p className="text-[var(--PhaseFlow-text-secondary)] mb-4">{description}</p>
 
       <CycleProgressBar
         currentDay={day}

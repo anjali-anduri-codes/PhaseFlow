@@ -23,7 +23,7 @@ export function ComponentLibraryScreen({ onBack }: ComponentLibraryScreenProps) 
     <div className="flex flex-col h-full overflow-auto">
       <div className="p-6 space-y-8 pb-20">
         <div className="pt-8">
-          <button onClick={onBack} className="flex items-center gap-2 mb-4 text-[var(--flowfit-sage)]">
+          <button onClick={onBack} className="flex items-center gap-2 mb-4 text-[var(--PhaseFlow-sage)]">
             <ArrowLeft size={20} />
             <span>Back</span>
           </button>

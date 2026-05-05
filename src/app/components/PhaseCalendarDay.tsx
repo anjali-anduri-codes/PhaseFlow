@@ -31,7 +31,7 @@ export function PhaseCalendarDay({ day, phase, isToday, hasWorkout }: PhaseCalen
     <div className="flex flex-col items-center justify-center aspect-square relative">
       <div
         className={`w-full h-full flex items-center justify-center rounded-full transition-all ${
-          isToday ? 'ring-2 ring-[var(--flowfit-sage)] ring-offset-2' : ''
+          isToday ? 'ring-2 ring-[var(--PhaseFlow-sage)] ring-offset-2' : ''
         }`}
         style={{
           backgroundColor: phase ? phaseColors[phase].background : 'transparent',
@@ -41,7 +41,7 @@ export function PhaseCalendarDay({ day, phase, isToday, hasWorkout }: PhaseCalen
         <span className="text-sm font-['JetBrains_Mono']">{day}</span>
       </div>
       {hasWorkout && (
-        <div className="absolute bottom-0 w-1.5 h-1.5 rounded-full bg-[var(--flowfit-sage)]" />
+        <div className="absolute bottom-0 w-1.5 h-1.5 rounded-full bg-[var(--PhaseFlow-sage)]" />
       )}
     </div>
   );

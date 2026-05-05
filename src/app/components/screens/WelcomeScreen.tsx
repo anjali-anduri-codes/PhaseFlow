@@ -14,9 +14,9 @@ export function WelcomeScreen({ onNext }: WelcomeScreenProps) {
               cx="100"
               cy="100"
               r="80"
-              fill="var(--flowfit-sage)"
+              fill="var(--PhaseFlow-sage)"
               opacity="0.1"
-              className="flowfit-heartbeat-ring flowfit-heartbeat-ring-1"
+              className="PhaseFlow-heartbeat-ring PhaseFlow-heartbeat-ring-1"
             />
             <circle
               cx="100"
@@ -24,7 +24,7 @@ export function WelcomeScreen({ onNext }: WelcomeScreenProps) {
               r="60"
               fill="var(--phase-follicular)"
               opacity="0.15"
-              className="flowfit-heartbeat-ring flowfit-heartbeat-ring-2"
+              className="PhaseFlow-heartbeat-ring PhaseFlow-heartbeat-ring-2"
             />
             <circle
               cx="100"
@@ -32,19 +32,19 @@ export function WelcomeScreen({ onNext }: WelcomeScreenProps) {
               r="40"
               fill="var(--phase-ovulatory)"
               opacity="0.2"
-              className="flowfit-heartbeat-ring flowfit-heartbeat-ring-3"
+              className="PhaseFlow-heartbeat-ring PhaseFlow-heartbeat-ring-3"
             />
             <circle
               cx="100"
               cy="100"
               r="20"
-              fill="var(--flowfit-terracotta)"
+              fill="var(--PhaseFlow-terracotta)"
               opacity="0.3"
-              className="flowfit-heartbeat-ring flowfit-heartbeat-ring-4"
+              className="PhaseFlow-heartbeat-ring PhaseFlow-heartbeat-ring-4"
             />
             <path
               d="M 100 20 Q 160 60 140 120 Q 120 180 100 180 Q 80 180 60 120 Q 40 60 100 20 Z"
-              fill="var(--flowfit-sage)"
+              fill="var(--PhaseFlow-sage)"
               opacity="0.2"
             />
           </svg>
@@ -54,26 +54,26 @@ export function WelcomeScreen({ onNext }: WelcomeScreenProps) {
       <div className="w-full space-y-6">
         <div className="text-center space-y-3">
           <p
-            className="text-2xl tracking-[0.06em] text-[var(--flowfit-sage)] font-extrabold leading-none"
-            style={{ animation: 'flowfit-brand-settle 0.62s ease-out both' }}
+            className="text-2xl tracking-[0.06em] text-[var(--PhaseFlow-sage)] font-extrabold leading-none"
+            style={{ animation: 'PhaseFlow-brand-settle 0.62s ease-out both' }}
           >
             PhaseFlow
           </p>
-          <h1 className="text-3xl" style={{ animation: 'flowfit-fade-up 0.55s ease-out 0.35s both' }}>
+          <h1 className="text-3xl" style={{ animation: 'PhaseFlow-fade-up 0.55s ease-out 0.35s both' }}>
             Train with your cycle, not against it.
           </h1>
-          <p className="text-[var(--flowfit-text-secondary)]" style={{ animation: 'flowfit-fade-up 0.62s ease-out 0.52s both' }}>
+          <p className="text-[var(--PhaseFlow-text-secondary)]" style={{ animation: 'PhaseFlow-fade-up 0.62s ease-out 0.52s both' }}>
             Personalised workouts for every phase of your menstrual cycle.
           </p>
         </div>
 
-        <div style={{ animation: 'flowfit-fade-up 0.6s ease-out 0.68s both' }}>
+        <div style={{ animation: 'PhaseFlow-fade-up 0.6s ease-out 0.68s both' }}>
           <PrimaryButton onClick={onNext}>
           Get started
           </PrimaryButton>
         </div>
 
-        <p className="text-xs text-center text-[var(--flowfit-text-secondary)]" style={{ animation: 'flowfit-fade-in 0.65s ease-out 0.8s both' }}>
+        <p className="text-xs text-center text-[var(--PhaseFlow-text-secondary)]" style={{ animation: 'PhaseFlow-fade-in 0.65s ease-out 0.8s both' }}>
           For all menstruators, regardless of gender identity.
         </p>
       </div>

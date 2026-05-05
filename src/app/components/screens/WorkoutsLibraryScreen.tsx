@@ -140,11 +140,11 @@ export function WorkoutsLibraryScreen({ onNavigate, onSelectWorkout }: WorkoutsL
             <h1 className="mb-4">Workouts</h1>
 
             <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--flowfit-text-secondary)]" size={20} />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--PhaseFlow-text-secondary)]" size={20} />
               <input
                 type="text"
                 placeholder="Search workouts..."
-                className="w-full pl-12 pr-4 py-3 rounded-xl bg-white border-2 border-transparent focus:border-[var(--flowfit-sage)] transition-colors"
+                className="w-full pl-12 pr-4 py-3 rounded-xl bg-white border-2 border-transparent focus:border-[var(--PhaseFlow-sage)] transition-colors"
               />
             </div>
           </div>
@@ -156,8 +156,8 @@ export function WorkoutsLibraryScreen({ onNavigate, onSelectWorkout }: WorkoutsL
                 onClick={() => setSelectedCategory(null)}
                 className={`px-4 py-2 rounded-full whitespace-nowrap transition-all ${
                   selectedCategory === null
-                    ? 'bg-[var(--flowfit-sage)] text-white'
-                    : 'bg-white text-[var(--flowfit-text-primary)] border border-gray-200'
+                    ? 'bg-[var(--PhaseFlow-sage)] text-white'
+                    : 'bg-white text-[var(--PhaseFlow-text-primary)] border border-gray-200'
                 }`}
               >
                 All
@@ -169,7 +169,7 @@ export function WorkoutsLibraryScreen({ onNavigate, onSelectWorkout }: WorkoutsL
                   className={`px-4 py-2 rounded-full whitespace-nowrap transition-all ${
                     selectedCategory === cat.id
                       ? 'text-white'
-                      : 'bg-white text-[var(--flowfit-text-primary)] border border-gray-200'
+                      : 'bg-white text-[var(--PhaseFlow-text-primary)] border border-gray-200'
                   }`}
                   style={{
                     backgroundColor: selectedCategory === cat.id ? cat.color : undefined
@@ -206,12 +206,12 @@ export function WorkoutsLibraryScreen({ onNavigate, onSelectWorkout }: WorkoutsL
                 </div>
                 <div className="p-3">
                   <h4 className="mb-1 text-sm">{workout.name}</h4>
-                  <div className="flex items-center gap-1 text-xs text-[var(--flowfit-text-secondary)] mb-1">
+                  <div className="flex items-center gap-1 text-xs text-[var(--PhaseFlow-text-secondary)] mb-1">
                     <span>{workout.duration}</span>
                     <span>·</span>
                     <span>{workout.intensity}</span>
                   </div>
-                  <p className="text-xs text-[var(--flowfit-text-secondary)]">{workout.phase}</p>
+                  <p className="text-xs text-[var(--PhaseFlow-text-secondary)]">{workout.phase}</p>
                 </div>
               </button>
             ))}

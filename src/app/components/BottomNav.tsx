@@ -9,7 +9,7 @@ interface BottomNavProps {
 
 function itemClass(isActive: boolean): string {
   return `flex items-center justify-center py-1 px-2 transition-colors ${
-    isActive ? 'text-[var(--flowfit-sage)]' : 'text-[var(--flowfit-text-secondary)]'
+    isActive ? 'text-[var(--PhaseFlow-sage)]' : 'text-[var(--PhaseFlow-text-secondary)]'
   }`;
 }
 
@@ -32,10 +32,10 @@ export function BottomNav({ activeScreen, onNavigate }: BottomNavProps) {
 
         <button onClick={() => onNavigate('gemma-chat')} className={itemClass(isChatActive)}>
           <div
-            className={`w-10 h-10 rounded-full bg-[var(--flowfit-sage)] text-white shadow-md flex items-center justify-center -translate-y-2 transition-all ${
+            className={`w-10 h-10 rounded-full bg-[var(--PhaseFlow-sage)] text-white shadow-md flex items-center justify-center -translate-y-2 transition-all ${
               isChatActive
-                ? 'ring-2 ring-[var(--flowfit-sage)]/35 scale-105'
-                : 'ring-2 ring-[var(--flowfit-sage)]/20'
+                ? 'ring-2 ring-[var(--PhaseFlow-sage)]/35 scale-105'
+                : 'ring-2 ring-[var(--PhaseFlow-sage)]/20'
             }`}
           >
             <MessageCircle size={18} />

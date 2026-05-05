@@ -349,7 +349,7 @@ function sanitizeChatReply(raw: string): string {
   }
 
   const leakedPlanning =
-    /(Persona:|Constraint:|Current User State:|Draft\s*\d+|Cycle Status:|Style:|Characteristics:|Gemma\s*4)/i;
+    /(Persona:|Constraint:|Current User State:|Draft\s*\d+|Cycle Status:|Style:|Characteristics:|Current Goal:|Context:|Structure:|No labels\?:|Gemma\s*4)/i;
   if (leakedPlanning.test(text)) {
     const draftMatch = text.match(/Draft\s*\d+\s*:\*?\s*([\s\S]*)/i);
     if (draftMatch?.[1]) {
@@ -363,7 +363,7 @@ function sanitizeChatReply(raw: string): string {
       .map((line) => line.replace(/^[-*]\s*/, ''))
       .filter(
         (line) =>
-          !/^(Gemma\s*4|Style|Characteristics|Persona|User|Cycle Status|Current User State|Goal|Constraint|Phase|Typical hormonal shift|Acknowledge|Explain|Suggest|Recommend|Encourage|Concise\?|Supportive\?|Practical\?|No medical diagnosis\?|Under 140 words\?|Addressed .+\?|Cycle-aware\?)/i.test(
+          !/^(Gemma\s*4|Style|Characteristics|Current Goal|Context|Structure|Persona|User|Cycle Status|Current User State|Goal|Constraint|Phase|Typical hormonal shift|Acknowledge|Explain|Suggest|Recommend|Encourage|Concise\?|Supportive\?|Practical\?|No medical diagnosis\?|Under 140 words\?|Addressed .+\?|Cycle-aware\?|No labels\?)/i.test(
             line
           )
       )
@@ -378,10 +378,41 @@ function sanitizeChatReply(raw: string): string {
   return text
     .replace(/^\*+\s*Draft\s*\d+\s*:\*?\s*/i, '')
     .replace(/^Gemma\s*4\s*/i, '')
+    .replace(/^Current Goal:\s*.*$/gim, '')
+    .replace(/^Context:\s*.*$/gim, '')
+    .replace(/^Structure:\s*.*$/gim, '')
     .replace(/^Style:\s*.*$/gim, '')
     .replace(/^Characteristics:\s*.*$/gim, '')
+    .replace(/^No labels\?:\s*.*$/gim, '')
     .replace(/\s{2,}/g, ' ')
     .trim();
+}
+
+function normalizeForEchoCheck(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function isEchoResponse(reply: string, userMessage: string): boolean {
+  const normalizedReply = normalizeForEchoCheck(reply);
+  const normalizedUser = normalizeForEchoCheck(userMessage);
+
+  if (!normalizedReply || !normalizedUser) {
+    return false;
+  }
+
+  if (normalizedReply === normalizedUser) {
+    return true;
+  }
+
+  if (normalizedUser.length >= 18 && normalizedReply.includes(normalizedUser)) {
+    return true;
+  }
+
+  return false;
 }
 
 export async function sendChatMessage(
@@ -431,7 +462,15 @@ export async function sendChatMessage(
   ].join('\n');
 
   const raw = await callGemma(prompt, { expectsJson: false });
-  return sanitizeChatReply(raw);
+  const cleaned = sanitizeChatReply(raw);
+
+  if (isEchoResponse(cleaned, userMessage)) {
+    const greeting = userName ? `Hi ${userName}, ` : '';
+    const phaseText = currentPhase !== 'unknown' ? `in your ${currentPhase} phase` : 'today';
+    return `${greeting}thanks for sharing. Based on where you are ${phaseText}, try a 5-minute warm-up, then 2-3 focused strength or low-impact intervals, and finish with a short cool-down. Keep intensity at a level where you can still breathe steadily, and adjust if your energy dips.`;
+  }
+
+  return cleaned;
 }
 
 export async function parseWorkoutLog(input: WorkoutLogInput): Promise<WorkoutLogAnalysis> {
@@ -446,7 +485,14 @@ export async function parseWorkoutLog(input: WorkoutLogInput): Promise<WorkoutLo
   ].join('\n');
 
   const text = await callGemma(prompt, { expectsJson: true });
-  const parsed = parseJson<WorkoutLogAnalysis>(text);
+  let parsed: Partial<WorkoutLogAnalysis> = {};
+
+  try {
+    parsed = parseJson<WorkoutLogAnalysis>(text);
+  } catch {
+    // Keep flow working if Gemma sends plain text instead of JSON.
+    parsed = {};
+  }
 
   return {
     energyRating: Math.min(5, Math.max(1, Math.round(parsed.energyRating || 3))),
@@ -632,7 +678,15 @@ export async function getHomeInsights(input: HomeInsightsInput): Promise<HomeIns
   ].join('\n');
 
   const text = await callGemma(prompt, { expectsJson: true });
-  const parsed = parseJson<Partial<HomeInsights>>(text);
+  let parsed: Partial<HomeInsights> = {};
+
+  try {
+    parsed = parseJson<Partial<HomeInsights>>(text);
+  } catch {
+    // Gemma can occasionally return plain text despite JSON instructions.
+    // Keep the app usable by falling back to timeline-driven defaults.
+    parsed = {};
+  }
 
   const parsedPhase: Phase | null =
     parsed.phase === 'menstrual' ||

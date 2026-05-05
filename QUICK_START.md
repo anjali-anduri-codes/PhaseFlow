@@ -1,6 +1,6 @@
-# FlowFit - Quick Start Guide
+# PhaseFlow - Quick Start Guide
 
-Welcome to FlowFit! Here's how to explore all the features:
+Welcome to PhaseFlow! Here's how to explore all the features:
 
 ## 🎯 First Time Setup
 

@@ -16,6 +16,8 @@ interface WorkoutExercise {
   description: string;
 }
 
+type WorkoutMode = 'continuous' | 'circuit';
+
 interface WorkoutActiveScreenProps {
   onExit: () => void;
   onComplete: (summary: {
@@ -98,7 +100,8 @@ function parseExercise(exerciseText: string, phase?: string): WorkoutExercise {
     const value = Number(timedPattern[1]);
     const unit = timedPattern[2].toLowerCase();
     workSeconds = unit.startsWith('min') ? value * 60 : value;
-    sets = setsPattern ? Math.max(1, Number(setsPattern[1])) : 1;
+    // Keep phase defaults when a timed move doesn't explicitly specify set count.
+    sets = setsPattern ? Math.max(1, Number(setsPattern[1])) : defaults.sets;
     repsText = `${value} ${unit.startsWith('min') ? 'min' : 'sec'}`;
   } else if (xPattern) {
     sets = Math.max(1, Number(xPattern[1]));
@@ -138,7 +141,20 @@ export function WorkoutActiveScreen({ onExit, onComplete, onChat, workoutPlan, c
       return defaultExercises;
     }
 
-    const planExercises = workoutPlan.exercises.map((exercise) => parseExercise(exercise, currentPhase));
+    const planExercises = workoutPlan.exercises
+      .map((exercise) => parseExercise(exercise, currentPhase))
+      .filter((exercise) => exercise.name.trim().length > 0);
+
+    // Guarantee a meaningful session length even if model returns too few items.
+    const minExerciseCount = 3;
+    if (planExercises.length < minExerciseCount) {
+      const needed = minExerciseCount - planExercises.length;
+      const fallbackExercises = defaultExercises.slice(0, needed).map((exercise, index) => ({
+        ...exercise,
+        name: `${exercise.name} ${index + 1}`
+      }));
+      planExercises.push(...fallbackExercises);
+    }
 
     if (workoutPlan.warmup) {
       return [
@@ -160,22 +176,40 @@ export function WorkoutActiveScreen({ onExit, onComplete, onChat, workoutPlan, c
   const [currentExercise, setCurrentExercise] = useState(0);
   const [currentSet, setCurrentSet] = useState(1);
   const [timeRemaining, setTimeRemaining] = useState(exercises[0].workSeconds);
+  const [workoutMode, setWorkoutMode] = useState<WorkoutMode>('continuous');
   const [isPaused, setIsPaused] = useState(false);
   const [isResting, setIsResting] = useState(false);
   const [sessionStarted, setSessionStarted] = useState(false);
   const [completedExercises, setCompletedExercises] = useState<number[]>([]);
+  const [performedSets, setPerformedSets] = useState<number[]>(() => new Array(exercises.length).fill(0));
   const [sessionStartedAt, setSessionStartedAt] = useState<number | null>(null);
+  const [isTransitioningStep, setIsTransitioningStep] = useState(false);
 
   useEffect(() => {
     setCurrentExercise(0);
     setCurrentSet(1);
     setTimeRemaining(exercises[0]?.workSeconds || 180);
+    setWorkoutMode('continuous');
     setIsPaused(false);
     setIsResting(false);
     setSessionStarted(false);
     setCompletedExercises([]);
+    setPerformedSets(new Array(exercises.length).fill(0));
     setSessionStartedAt(null);
+    setIsTransitioningStep(false);
   }, [exercises]);
+
+  useEffect(() => {
+    const completed = performedSets
+      .map((count, index) => (count >= (exercises[index]?.sets || 1) ? index : -1))
+      .filter((index) => index >= 0);
+    setCompletedExercises(completed);
+  }, [performedSets, exercises]);
+
+  useEffect(() => {
+    const nextSet = Math.min(exercises[currentExercise]?.sets || 1, (performedSets[currentExercise] || 0) + 1);
+    setCurrentSet(nextSet);
+  }, [currentExercise, performedSets, exercises]);
 
   const completeSession = (finalCompletedCount: number) => {
     const now = Date.now();
@@ -191,12 +225,32 @@ export function WorkoutActiveScreen({ onExit, onComplete, onChat, workoutPlan, c
     });
   };
 
+  const getNextContinuousExercise = (setsDone: number[], fromIndex: number): number | null => {
+    for (let i = fromIndex; i < exercises.length; i += 1) {
+      if ((setsDone[i] || 0) < exercises[i].sets) {
+        return i;
+      }
+    }
+    return null;
+  };
+
+  const getNextCircuitExercise = (setsDone: number[], fromIndex: number): number | null => {
+    const total = exercises.length;
+    for (let step = 0; step < total; step += 1) {
+      const index = (fromIndex + step) % total;
+      if ((setsDone[index] || 0) < exercises[index].sets) {
+        return index;
+      }
+    }
+    return null;
+  };
+
   useEffect(() => {
     if (!sessionStarted || isPaused) {
       return;
     }
 
-    if (timeRemaining === 0) {
+    if (timeRemaining === 0 && !isTransitioningStep) {
       handleExerciseComplete();
       return;
     }
@@ -206,55 +260,81 @@ export function WorkoutActiveScreen({ onExit, onComplete, onChat, workoutPlan, c
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [sessionStarted, isPaused, timeRemaining, isResting, currentExercise, currentSet]);
+  }, [sessionStarted, isPaused, timeRemaining, isResting, currentExercise, currentSet, isTransitioningStep]);
 
   const handleExerciseComplete = () => {
+    if (isTransitioningStep) {
+      return;
+    }
+
+    setIsTransitioningStep(true);
     const exercise = exercises[currentExercise];
 
     if (isResting) {
       setIsResting(false);
       setTimeRemaining(exercise.workSeconds);
+      setTimeout(() => setIsTransitioningStep(false), 0);
       return;
     }
 
-    if (currentSet < exercise.sets) {
-      setIsResting(true);
-      setCurrentSet(currentSet + 1);
-      setTimeRemaining(exercise.restSeconds || 20);
-    } else if (currentExercise < exercises.length - 1) {
-      setCompletedExercises((prev) =>
-        prev.includes(currentExercise) ? prev : [...prev, currentExercise]
-      );
-      setCurrentExercise(currentExercise + 1);
-      setCurrentSet(1);
-      setTimeRemaining(exercises[currentExercise + 1].workSeconds);
-      setIsResting(false);
-    } else {
-      setCompletedExercises((prev) => {
-        const next = prev.includes(currentExercise) ? prev : [...prev, currentExercise];
-        completeSession(next.length);
+    setPerformedSets((prev) => {
+      const next = [...prev];
+      next[currentExercise] = Math.min(exercise.sets, (next[currentExercise] || 0) + 1);
+
+      const completedCount = next.filter((count, index) => count >= exercises[index].sets).length;
+      if (completedCount >= exercises.length) {
+        completeSession(completedCount);
+        setTimeout(() => setIsTransitioningStep(false), 0);
         return next;
-      });
-    }
+      }
+
+      let nextExercise: number | null = null;
+      if (workoutMode === 'continuous') {
+        if (next[currentExercise] < exercise.sets) {
+          nextExercise = currentExercise;
+        } else {
+          nextExercise = getNextContinuousExercise(next, currentExercise + 1);
+        }
+      } else {
+        nextExercise = getNextCircuitExercise(next, currentExercise + 1);
+      }
+
+      if (nextExercise === null) {
+        completeSession(completedCount);
+        setTimeout(() => setIsTransitioningStep(false), 0);
+        return next;
+      }
+
+      setCurrentExercise(nextExercise);
+      setIsResting(true);
+      setTimeRemaining(exercise.restSeconds || 20);
+      setTimeout(() => setIsTransitioningStep(false), 0);
+      return next;
+    });
   };
 
   const handleSkip = () => {
-    setCompletedExercises((prev) =>
-      prev.includes(currentExercise) ? prev : [...prev, currentExercise]
-    );
+    setPerformedSets((prev) => {
+      const next = [...prev];
+      next[currentExercise] = exercises[currentExercise].sets;
 
-    if (currentExercise < exercises.length - 1) {
-      setCurrentExercise(currentExercise + 1);
-      setCurrentSet(1);
-      setTimeRemaining(exercises[currentExercise + 1].workSeconds);
-      setIsResting(false);
-    } else {
-      setCompletedExercises((prev) => {
-        const next = prev.includes(currentExercise) ? prev : [...prev, currentExercise];
-        completeSession(next.length);
+      const completedCount = next.filter((count, index) => count >= exercises[index].sets).length;
+      if (completedCount >= exercises.length) {
+        completeSession(completedCount);
         return next;
-      });
-    }
+      }
+
+      const nextExercise = getNextContinuousExercise(next, currentExercise + 1);
+      if (nextExercise !== null) {
+        setCurrentExercise(nextExercise);
+        setIsResting(false);
+        setTimeRemaining(exercises[nextExercise].workSeconds);
+      } else {
+        completeSession(completedCount);
+      }
+
+      return next;
+    });
   };
 
   const exercise = exercises[currentExercise];
@@ -270,38 +350,63 @@ export function WorkoutActiveScreen({ onExit, onComplete, onChat, workoutPlan, c
 
   if (!sessionStarted) {
     return (
-      <div className="flex flex-col h-full bg-[var(--flowfit-off-white)] p-6 pt-12">
+      <div className="flex flex-col h-full bg-[var(--PhaseFlow-off-white)] p-6 pt-12 overflow-hidden">
         <div className="flex items-center justify-between mb-6">
-          <button onClick={onExit} className="p-2 rounded-full bg-white text-[var(--flowfit-text-primary)]">
+          <button onClick={onExit} className="p-2 rounded-full bg-white text-[var(--PhaseFlow-text-primary)]">
             <X size={24} />
           </button>
-          <button onClick={onChat} className="p-2 rounded-full bg-white text-[var(--flowfit-sage)]">
+          <button onClick={onChat} className="p-2 rounded-full bg-white text-[var(--PhaseFlow-sage)]">
             <MessageCircle size={24} />
           </button>
         </div>
 
         <h1 className="mb-2">Review workout plan</h1>
-        <p className="text-[var(--flowfit-text-secondary)] mb-5">
+        <p className="text-[var(--PhaseFlow-text-secondary)] mb-5">
           {workoutPlan?.name || 'Today\'s guided session'}
         </p>
 
         {workoutPlan?.warmup && (
           <div className="p-4 rounded-xl bg-white border border-gray-200 mb-4">
             <h4 className="mb-1">Warmup</h4>
-            <p className="text-sm text-[var(--flowfit-text-secondary)]">{workoutPlan.warmup}</p>
+            <p className="text-sm text-[var(--PhaseFlow-text-secondary)]">{workoutPlan.warmup}</p>
           </div>
         )}
 
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 overflow-auto min-h-0">
+          <div className="mb-4 p-3 rounded-xl bg-white border border-gray-200">
+            <p className="text-xs text-[var(--PhaseFlow-text-secondary)] mb-2">Session style</p>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setWorkoutMode('continuous')}
+                className={`px-3 py-2 rounded-lg text-sm border ${
+                  workoutMode === 'continuous'
+                    ? 'bg-[var(--PhaseFlow-sage)] text-white border-[var(--PhaseFlow-sage)]'
+                    : 'bg-white text-[var(--PhaseFlow-text-primary)] border-gray-200'
+                }`}
+              >
+                Continuous sets
+              </button>
+              <button
+                onClick={() => setWorkoutMode('circuit')}
+                className={`px-3 py-2 rounded-lg text-sm border ${
+                  workoutMode === 'circuit'
+                    ? 'bg-[var(--PhaseFlow-sage)] text-white border-[var(--PhaseFlow-sage)]'
+                    : 'bg-white text-[var(--PhaseFlow-text-primary)] border-gray-200'
+                }`}
+              >
+                Circuit
+              </button>
+            </div>
+          </div>
           <div className="space-y-2">
             {exercises.map((item, index) => (
               <div key={`${item.name}-${index}`} className="p-3 rounded-xl bg-white border border-gray-200">
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <h4 className="text-sm">{item.name}</h4>
-                    <p className="text-xs text-[var(--flowfit-text-secondary)]">{item.description}</p>
+                    <p className="text-xs text-[var(--PhaseFlow-text-secondary)]">{item.description}</p>
                   </div>
-                  <span className="text-xs text-[var(--flowfit-text-secondary)] font-['JetBrains_Mono']">
+                  <span className="text-xs text-[var(--PhaseFlow-text-secondary)] font-['JetBrains_Mono']">
                     {item.sets} x {item.repsText}
                   </span>
                 </div>
@@ -318,7 +423,7 @@ export function WorkoutActiveScreen({ onExit, onComplete, onChat, workoutPlan, c
               setSessionStartedAt(Date.now());
             }
           }}
-          className="w-full px-6 py-4 rounded-xl text-white bg-[var(--flowfit-sage)] min-h-[44px] mt-4"
+          className="w-full px-6 py-4 rounded-xl text-white bg-[var(--PhaseFlow-sage)] min-h-[44px] mt-4"
         >
           Start session
         </button>
@@ -327,7 +432,7 @@ export function WorkoutActiveScreen({ onExit, onComplete, onChat, workoutPlan, c
   }
 
   return (
-    <div className="flex flex-col h-full bg-[var(--flowfit-sage)]">
+    <div className="flex flex-col h-full bg-[var(--PhaseFlow-sage)] overflow-hidden">
       {/* Header */}
       <div className="p-6 pt-12">
         <div className="flex items-center justify-between mb-4">
@@ -356,18 +461,18 @@ export function WorkoutActiveScreen({ onExit, onComplete, onChat, workoutPlan, c
       </div>
 
       {/* Exercise Display */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 text-white">
+      <div className="flex-1 min-h-0 overflow-y-auto flex flex-col items-center justify-center px-4 text-white">
         {isResting ? (
           <>
-            <div className="text-6xl font-['JetBrains_Mono'] mb-4">{formatTime(timeRemaining)}</div>
+            <div className="text-5xl sm:text-6xl font-['JetBrains_Mono'] mb-4">{formatTime(timeRemaining)}</div>
             <h2 className="mb-2 text-white">Rest</h2>
-            <p className="text-white/80 text-center">
+            <p className="text-white/80 text-center max-w-[320px] break-words">
               Next: {exercises[currentExercise].name} (Set {currentSet} of {exercise.sets})
             </p>
           </>
         ) : (
           <>
-            <div className="w-48 h-48 mb-8 rounded-2xl bg-white/10 flex items-center justify-center">
+            <div className="w-40 h-40 sm:w-48 sm:h-48 mb-6 rounded-2xl bg-white/10 flex items-center justify-center">
               {/* Exercise illustration placeholder */}
               <svg width="120" height="120" viewBox="0 0 120 120" fill="none">
                 <circle cx="60" cy="35" r="15" fill="white" opacity="0.3" />
@@ -379,8 +484,8 @@ export function WorkoutActiveScreen({ onExit, onComplete, onChat, workoutPlan, c
               </svg>
             </div>
 
-            <h1 className="mb-2 text-white text-center">{exercise.name}</h1>
-            <p className="text-white/80 mb-6 text-center">{exercise.description}</p>
+            <h1 className="mb-2 text-white text-center max-w-[330px] break-words">{exercise.name}</h1>
+            <p className="text-white/80 mb-4 text-center max-w-[330px] break-words">{exercise.description}</p>
 
             <div className="text-white/90 mb-2 font-['JetBrains_Mono']">
               Target: {exercise.repsText}
@@ -392,9 +497,18 @@ export function WorkoutActiveScreen({ onExit, onComplete, onChat, workoutPlan, c
               </div>
             )}
 
-            <div className="text-7xl font-['JetBrains_Mono'] mb-8">
+            <div className="text-5xl sm:text-6xl font-['JetBrains_Mono'] mb-6 leading-none">
               {formatTime(timeRemaining)}
             </div>
+
+            {workoutMode === 'continuous' && !isResting && (
+              <button
+                onClick={handleExerciseComplete}
+                className="px-4 py-2 rounded-lg bg-white text-[var(--PhaseFlow-sage)] text-sm font-medium"
+              >
+                Record set
+              </button>
+            )}
           </>
         )}
       </div>
@@ -411,7 +525,7 @@ export function WorkoutActiveScreen({ onExit, onComplete, onChat, workoutPlan, c
 
           <button
             onClick={() => setIsPaused(!isPaused)}
-            className="p-6 rounded-full bg-white text-[var(--flowfit-sage)] hover:bg-white/90 transition-colors"
+            className="p-6 rounded-full bg-white text-[var(--PhaseFlow-sage)] hover:bg-white/90 transition-colors"
           >
             {isPaused ? <Play size={32} /> : <Pause size={32} />}
           </button>

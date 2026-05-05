@@ -30,31 +30,31 @@ export function GoogleAuthScreen({ onNext }: GoogleAuthScreenProps) {
     <div className="flex flex-col h-full p-6 pt-16">
       <div className="mb-8">
         <h1 className="mb-2">Connect your Google account</h1>
-        <p className="text-[var(--flowfit-text-secondary)]">
-          Sign in to use Google Fit and Health Connect data in FlowFit.
+        <p className="text-[var(--PhaseFlow-text-secondary)]">
+          Sign in to use Google Fit and Health Connect data in PhaseFlow.
         </p>
       </div>
 
       <div className="flex-1 space-y-4">
         <div className="bg-white rounded-xl p-4 border border-gray-200 flex gap-3">
-          <div className="p-2 rounded-lg bg-[var(--flowfit-off-white)] text-[var(--flowfit-sage)]">
+          <div className="p-2 rounded-lg bg-[var(--PhaseFlow-off-white)] text-[var(--PhaseFlow-sage)]">
             <ShieldCheck size={20} />
           </div>
           <div>
             <h4>Secure sign-in</h4>
-            <p className="text-sm text-[var(--flowfit-text-secondary)]">
+            <p className="text-sm text-[var(--PhaseFlow-text-secondary)]">
               OAuth sign-in only. We never store your Google password.
             </p>
           </div>
         </div>
 
         <div className="bg-white rounded-xl p-4 border border-gray-200 flex gap-3">
-          <div className="p-2 rounded-lg bg-[var(--flowfit-off-white)] text-[var(--flowfit-sage)]">
+          <div className="p-2 rounded-lg bg-[var(--PhaseFlow-off-white)] text-[var(--PhaseFlow-sage)]">
             <Smartphone size={20} />
           </div>
           <div>
             <h4>Google Fit access</h4>
-            <p className="text-sm text-[var(--flowfit-text-secondary)]">
+            <p className="text-sm text-[var(--PhaseFlow-text-secondary)]">
               We only request activity and cycle-tracking scopes needed for recommendations.
             </p>
           </div>

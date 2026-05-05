@@ -1,12 +1,12 @@
 const STORAGE_KEYS = {
-  dataSource: 'flowfit.dataSource',
-  googleAuthenticated: 'flowfit.google.authenticated',
-  googleConsentGranted: 'flowfit.google.consentGranted',
-  googleAccessToken: 'flowfit.google.accessToken',
-  googleTokenExpiresAt: 'flowfit.google.tokenExpiresAt',
-  googleHasCycleData: 'flowfit.google.hasCycleData',
-  googleNeedsManualCycleSetup: 'flowfit.google.needsManualCycleSetup',
-  cycleSetupCompleted: 'flowfit.cycleSetupCompleted'
+  dataSource: 'PhaseFlow.dataSource',
+  googleAuthenticated: 'PhaseFlow.google.authenticated',
+  googleConsentGranted: 'PhaseFlow.google.consentGranted',
+  googleAccessToken: 'PhaseFlow.google.accessToken',
+  googleTokenExpiresAt: 'PhaseFlow.google.tokenExpiresAt',
+  googleHasCycleData: 'PhaseFlow.google.hasCycleData',
+  googleNeedsManualCycleSetup: 'PhaseFlow.google.needsManualCycleSetup',
+  cycleSetupCompleted: 'PhaseFlow.cycleSetupCompleted'
 } as const;
 
 type DataSource = 'manual' | 'google' | null;
@@ -122,7 +122,7 @@ function buildGoogleOAuthUrl(clientId: string, redirectUri: string, state: strin
 }
 
 async function launchOAuthPopup(url: string, redirectUri: string, expectedState: string): Promise<OAuthResult> {
-  const popup = window.open(url, 'flowfit-google-oauth', 'width=520,height=720');
+  const popup = window.open(url, 'PhaseFlow-google-oauth', 'width=520,height=720');
 
   if (!popup) {
     return {

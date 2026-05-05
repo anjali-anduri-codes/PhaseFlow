@@ -91,14 +91,14 @@ export function CycleDatesScreen({
               max="35"
               value={cycleLength}
               onChange={(e) => setCycleLength(parseInt(e.target.value))}
-              className="w-full h-2 bg-[var(--flowfit-off-white)] rounded-full appearance-none cursor-pointer"
+              className="w-full h-2 bg-[var(--PhaseFlow-off-white)] rounded-full appearance-none cursor-pointer"
               style={{
-                background: `linear-gradient(to right, var(--flowfit-sage) 0%, var(--flowfit-sage) ${
+                background: `linear-gradient(to right, var(--PhaseFlow-sage) 0%, var(--PhaseFlow-sage) ${
                   ((cycleLength - 21) / 14) * 100
-                }%, var(--flowfit-off-white) ${((cycleLength - 21) / 14) * 100}%, var(--flowfit-off-white) 100%)`
+                }%, var(--PhaseFlow-off-white) ${((cycleLength - 21) / 14) * 100}%, var(--PhaseFlow-off-white) 100%)`
               }}
             />
-            <div className="flex justify-between mt-2 text-sm text-[var(--flowfit-text-secondary)] font-['JetBrains_Mono']">
+            <div className="flex justify-between mt-2 text-sm text-[var(--PhaseFlow-text-secondary)] font-['JetBrains_Mono']">
               <span>21</span>
               <span>28</span>
               <span>35</span>
@@ -106,8 +106,8 @@ export function CycleDatesScreen({
           </div>
         </div>
 
-        <div className="p-4 bg-[var(--flowfit-off-white)] rounded-xl">
-          <p className="text-sm text-[var(--flowfit-text-secondary)]">
+        <div className="p-4 bg-[var(--PhaseFlow-off-white)] rounded-xl">
+          <p className="text-sm text-[var(--PhaseFlow-text-secondary)]">
             {infoText}
           </p>
         </div>

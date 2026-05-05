@@ -1,4 +1,4 @@
-Design a complete mobile app UI for FlowFit — a cycle-synced fitness app powered by Gemma 4 AI. The app recommends workouts based on the user's menstrual cycle phase and energy levels.
+Design a complete mobile app UI for PhaseFlow — a cycle-synced fitness app powered by Gemma 4 AI. The app recommends workouts based on the user's menstrual cycle phase and energy levels.
 
 ═══════════════════════════════════════════
 INCLUSIVITY PRINCIPLES — NON-NEGOTIABLE
@@ -17,7 +17,7 @@ This app is for ALL menstruators — regardless of gender identity. This must be
 BRAND & VISUAL IDENTITY
 ═══════════════════════════════════════════
 
-App name: FlowFit
+App name: PhaseFlow
 Team: Infradian Labs
 Tagline: "Train with your cycle, not against it."
 
@@ -73,11 +73,11 @@ SCREEN 3: ONBOARDING — Cycle dates
 • Title: "When did your last cycle begin?"
 • Large date picker input: DD / MM / YYYY
 • Cycle length input: "My cycle is typically __ days" (slider 21–35 days, default 28)
-• Informational note: "Not sure? Enter your best estimate — FlowFit learns over time."
+• Informational note: "Not sure? Enter your best estimate — PhaseFlow learns over time."
 • CTA: "Continue"
 
 SCREEN 4: ONBOARDING — Goals
-• Title: "What do you want from FlowFit?"
+• Title: "What do you want from PhaseFlow?"
 • Multi-select chip grid (toggle on/off):
   Build strength · Manage energy · Improve endurance · Reduce cycle symptoms · Stress relief · Flexibility · Weight management
 • CTA: "Let's go"
@@ -121,7 +121,7 @@ SCREEN 8: WORKOUT LOG — Parsed result state
 • Parsed result card appearing below the text:
   – "Gemma read this as:" header
   – Three data rows: Energy (2/5) · Completion (55%) · Mood (tired)
-  – "What FlowFit will adjust" box with Gemma's one-sentence adaptation note
+  – "What PhaseFlow will adjust" box with Gemma's one-sentence adaptation note
 • "Save log" primary button
 • "Edit note" ghost link
 • Gemma badge: "Analysed on-device · Private"

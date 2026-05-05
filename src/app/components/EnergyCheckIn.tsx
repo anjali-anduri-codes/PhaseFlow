@@ -20,8 +20,8 @@ export function EnergyCheckIn({ selectedLevel, onSelect }: EnergyCheckInProps) {
           onClick={() => onSelect?.(level)}
           className={`flex-1 flex flex-col items-center justify-center gap-2 py-3 px-2 rounded-xl min-h-[44px] transition-all ${
             selectedLevel === level
-              ? 'bg-[var(--flowfit-sage)] text-white'
-              : 'bg-[var(--flowfit-off-white)] text-[var(--flowfit-text-primary)] hover:bg-gray-200'
+              ? 'bg-[var(--PhaseFlow-sage)] text-white'
+              : 'bg-[var(--PhaseFlow-off-white)] text-[var(--PhaseFlow-text-primary)] hover:bg-gray-200'
           }`}
         >
           <div className="flex gap-0.5">
@@ -32,7 +32,7 @@ export function EnergyCheckIn({ selectedLevel, onSelect }: EnergyCheckInProps) {
                   i < level
                     ? selectedLevel === level
                       ? 'bg-white'
-                      : 'bg-[var(--flowfit-sage)]'
+                      : 'bg-[var(--PhaseFlow-sage)]'
                     : 'bg-gray-300'
                 }`}
               />

@@ -6,7 +6,7 @@ export function FloBadge({ connected = true }: FloBadgeProps) {
   return (
     <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
       connected
-        ? 'bg-[var(--flowfit-sage)] text-white'
+        ? 'bg-[var(--PhaseFlow-sage)] text-white'
         : 'bg-gray-200 text-gray-600'
     }`}>
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none">

@@ -7,7 +7,7 @@ interface GhostButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 export function GhostButton({ children, className = '', ...props }: GhostButtonProps) {
   return (
     <button
-      className={`px-4 py-2 rounded-lg text-[var(--flowfit-text-primary)] hover:bg-[var(--flowfit-off-white)] transition-colors ${className}`}
+      className={`px-4 py-2 rounded-lg text-[var(--PhaseFlow-text-primary)] hover:bg-[var(--PhaseFlow-off-white)] transition-colors ${className}`}
       {...props}
     >
       {children}

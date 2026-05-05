@@ -14,8 +14,8 @@ export function NameEntryScreen({ onNext, initialName = '' }: NameEntryScreenPro
     <div className="flex flex-col h-full p-6 pt-16">
       <div className="mb-8">
         <h1 className="mb-2">What should we call you?</h1>
-        <p className="text-[var(--flowfit-text-secondary)]">
-          We use your name for a more personal coaching experience.
+        <p className="text-[var(--PhaseFlow-text-secondary)]">
+          We use your name for a more personal experience.
         </p>
       </div>
 

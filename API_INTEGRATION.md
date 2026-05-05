@@ -1,6 +1,6 @@
-# FlowFit API Integration Guide
+# PhaseFlow API Integration Guide
 
-This document describes the API integrations required for FlowFit's cycle-synced fitness app.
+This document describes the API integrations required for PhaseFlow's cycle-synced fitness app.
 
 ## 1. Health App Integration (Data Source Screen)
 
@@ -147,7 +147,7 @@ This document describes the API integrations required for FlowFit's cycle-synced
 ## Backend Integration (Serverless OAuth & Google Fit)
 
 ### Overview
-FlowFit uses a serverless backend (Vercel Functions, AWS Lambda, etc.) to securely handle OAuth token exchange and Google Fit API calls.
+PhaseFlow uses a serverless backend (Vercel Functions, AWS Lambda, etc.) to securely handle OAuth token exchange and Google Fit API calls.
 
 ### Endpoints
 

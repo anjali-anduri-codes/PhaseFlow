@@ -301,6 +301,10 @@ export default function App() {
             cycleContext={onboardingCycle}
             goals={onboardingGoals}
             latestHomeInsights={latestHomeInsights}
+            onStartWorkoutFromChat={(plan) => {
+              setActiveWorkoutPlan(plan);
+              setCurrentScreen('workout-active');
+            }}
           />
         );
       case 'workout-log-input':
@@ -346,8 +350,8 @@ export default function App() {
   };
 
   return (
-    <div className="size-full flex items-center justify-center bg-[var(--flowfit-off-white)]">
-      <div className="w-full max-w-[390px] h-full max-h-[844px] bg-[var(--flowfit-off-white)] relative overflow-hidden shadow-2xl">
+    <div className="size-full flex items-center justify-center bg-[var(--PhaseFlow-off-white)]">
+      <div className="w-full max-w-[390px] h-full max-h-[844px] bg-[var(--PhaseFlow-off-white)] relative overflow-hidden shadow-2xl">
         {renderScreen()}
       </div>
     </div>

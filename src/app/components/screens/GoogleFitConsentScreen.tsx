@@ -28,8 +28,8 @@ export function GoogleFitConsentScreen({ onNext }: GoogleFitConsentScreenProps) 
     <div className="flex flex-col h-full p-6 pt-16">
       <div className="mb-8">
         <h1 className="mb-2">Consent to use Google Fit data</h1>
-        <p className="text-[var(--flowfit-text-secondary)]">
-          Review and approve what FlowFit can access.
+        <p className="text-[var(--PhaseFlow-text-secondary)]">
+          Review and approve what PhaseFlow can access.
         </p>
       </div>
 
@@ -39,7 +39,7 @@ export function GoogleFitConsentScreen({ onNext }: GoogleFitConsentScreenProps) 
             key={permission}
             className="w-full p-4 rounded-xl flex items-start gap-3 bg-white border border-gray-200"
           >
-            <div className="mt-0.5 text-[var(--flowfit-sage)]">
+            <div className="mt-0.5 text-[var(--PhaseFlow-sage)]">
               <Check size={18} />
             </div>
             <p className="text-sm">{permission}</p>
@@ -50,12 +50,12 @@ export function GoogleFitConsentScreen({ onNext }: GoogleFitConsentScreenProps) 
           onClick={() => setAccepted(!accepted)}
           className={`w-full p-4 rounded-xl border-2 text-left ${
             accepted
-              ? 'border-[var(--flowfit-sage)] bg-[var(--flowfit-off-white)]'
+              ? 'border-[var(--PhaseFlow-sage)] bg-[var(--PhaseFlow-off-white)]'
               : 'border-gray-200 bg-white'
           }`}
         >
           <h4 className="mb-1">I consent to data usage</h4>
-          <p className="text-sm text-[var(--flowfit-text-secondary)]">
+          <p className="text-sm text-[var(--PhaseFlow-text-secondary)]">
             You can revoke this permission anytime in Settings.
           </p>
         </button>

@@ -38,32 +38,32 @@ export function WorkoutCompleteScreen({ onFinish, onLogWorkout, summary }: Worko
   ];
 
   return (
-    <div className="flex flex-col h-full p-6 pt-16 bg-[var(--flowfit-off-white)]">
+    <div className="flex flex-col h-full p-6 pt-16 bg-[var(--PhaseFlow-off-white)]">
       <div className="flex-1 flex flex-col items-center justify-center text-center">
-        <div className="w-24 h-24 mb-6 rounded-full bg-[var(--flowfit-sage)] flex items-center justify-center">
+        <div className="w-24 h-24 mb-6 rounded-full bg-[var(--PhaseFlow-sage)] flex items-center justify-center">
           <Check size={48} className="text-white" />
         </div>
 
         <h1 className="mb-2">Workout complete!</h1>
-        <p className="text-[var(--flowfit-text-secondary)] mb-8">
+        <p className="text-[var(--PhaseFlow-text-secondary)] mb-8">
           Great job listening to your body today.
         </p>
 
         <div className="w-full max-w-sm space-y-4 mb-8">
           <div className="flex justify-between p-4 bg-white rounded-xl">
-            <span className="text-[var(--flowfit-text-secondary)]">Duration</span>
+            <span className="text-[var(--PhaseFlow-text-secondary)]">Duration</span>
             <span className="font-['JetBrains_Mono']">{formatDuration(summary?.elapsedSeconds || 0)}</span>
           </div>
 
           <div className="flex justify-between p-4 bg-white rounded-xl">
-            <span className="text-[var(--flowfit-text-secondary)]">Exercises</span>
+            <span className="text-[var(--PhaseFlow-text-secondary)]">Exercises</span>
             <span className="font-['JetBrains_Mono']">
               {summary ? `${summary.completedExercises}/${summary.totalExercises} completed` : '0 completed'}
             </span>
           </div>
 
           <div className="flex justify-between p-4 bg-white rounded-xl">
-            <span className="text-[var(--flowfit-text-secondary)]">Phase</span>
+            <span className="text-[var(--PhaseFlow-text-secondary)]">Phase</span>
             <span>{formatPhase(summary?.phase || 'Unknown')}</span>
           </div>
         </div>
@@ -79,8 +79,8 @@ export function WorkoutCompleteScreen({ onFinish, onLogWorkout, summary }: Worko
                   onClick={() => setFeeling(item.id)}
                   className={`flex-1 flex flex-col items-center gap-2 p-4 rounded-xl transition-all ${
                     feeling === item.id
-                      ? 'bg-[var(--flowfit-sage)] text-white'
-                      : 'bg-white text-[var(--flowfit-text-primary)]'
+                      ? 'bg-[var(--PhaseFlow-sage)] text-white'
+                      : 'bg-white text-[var(--PhaseFlow-text-primary)]'
                   }`}
                 >
                   <Icon size={24} />
@@ -98,7 +98,7 @@ export function WorkoutCompleteScreen({ onFinish, onLogWorkout, summary }: Worko
         </PrimaryButton>
         <button
           onClick={onFinish}
-          className="w-full text-[var(--flowfit-text-secondary)] py-2"
+          className="w-full text-[var(--PhaseFlow-text-secondary)] py-2"
         >
           Skip for now
         </button>

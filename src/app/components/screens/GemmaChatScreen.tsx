@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, ReactNode } from 'react';
 import { ArrowLeft, Send, Sparkles } from 'lucide-react';
 import { GemmaBadge } from '../GemmaBadge';
-import { HomeInsights, sendChatMessage } from '../../services/gemma';
+import { HomeInsights, WorkoutRecommendation, sendChatMessage } from '../../services/gemma';
 import { BottomNav } from '../BottomNav';
 
 interface Message {
@@ -9,6 +9,7 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  workoutPlan?: WorkoutRecommendation | null;
 }
 
 interface GemmaChatScreenProps {
@@ -22,6 +23,47 @@ interface GemmaChatScreenProps {
   } | null;
   goals?: string[];
   latestHomeInsights?: HomeInsights | null;
+  onStartWorkoutFromChat?: (plan: WorkoutRecommendation) => void;
+}
+
+function extractWorkoutPlanFromText(
+  content: string,
+  fallbackPhase?: string
+): WorkoutRecommendation | null {
+  const normalized = content.replace(/\r/g, '').trim();
+  const hasWorkoutSignals =
+    /(warm[-\s]?up|main workout|cool[-\s]?down|sets?\s*of|sets?\s*x|reps?|seconds?|minutes?)/i.test(
+      normalized
+    );
+
+  if (!hasWorkoutSignals) {
+    return null;
+  }
+
+  const exerciseMatches = [...normalized.matchAll(/([A-Za-z][A-Za-z\s\-']{2,40}):\s*(\d+\s*sets?\s*(?:x|of)?\s*\d+\s*(?:reps?|seconds?|sec|minutes?|mins)?(?:\s*each side)?)/gi)];
+  const exercises = exerciseMatches
+    .map((match) => `${match[1].trim()} - ${match[2].trim()}`)
+    .filter(Boolean)
+    .slice(0, 4);
+
+  if (exercises.length < 2) {
+    return null;
+  }
+
+  const warmupMatch = normalized.match(/warm[-\s]?up:\s*([^\n.]+(?:\.[^\n.]+)?)/i);
+  const reason =
+    normalized.match(/(energy|phase|focus|today|workout)[^.!?]{0,120}[.!?]/i)?.[0] ||
+    'This plan is tailored to your current cycle phase and today\'s energy.';
+
+  return {
+    name: 'Chat-generated workout plan',
+    duration: '30-40 min',
+    intensity: 'Moderate',
+    phase: fallbackPhase || 'Current phase',
+    reason: reason.trim(),
+    exercises,
+    warmup: warmupMatch?.[1]?.trim() || '5 minutes of gentle dynamic warm-up.'
+  };
 }
 
 function renderInlineFormatting(text: string): ReactNode[] {
@@ -61,7 +103,7 @@ function renderMessageContent(content: string): ReactNode {
             <ul key={`paragraph-${index}`} className="space-y-1">
               {bulletLines.map((item, itemIndex) => (
                 <li key={`bullet-${itemIndex}`} className="flex items-start gap-2 text-sm leading-relaxed">
-                  <span className="w-2 h-2 rounded-full bg-[var(--flowfit-sage)] mt-2 flex-shrink-0" />
+                  <span className="w-2 h-2 rounded-full bg-[var(--PhaseFlow-sage)] mt-2 flex-shrink-0" />
                   <span>{renderInlineFormatting(item)}</span>
                 </li>
               ))}
@@ -112,7 +154,8 @@ export function GemmaChatScreen({
   userName,
   cycleContext,
   goals = [],
-  latestHomeInsights
+  latestHomeInsights,
+  onStartWorkoutFromChat
 }: GemmaChatScreenProps) {
   const [messages, setMessages] = useState<Message[]>(() => [createInitialMessage(userName)]);
   const [input, setInput] = useState('');
@@ -165,7 +208,13 @@ export function GemmaChatScreen({
         id: (Date.now() + 1).toString(),
         role: 'assistant',
         content: reply,
-        timestamp: new Date()
+        timestamp: new Date(),
+        workoutPlan: extractWorkoutPlanFromText(
+          reply,
+          latestHomeInsights?.phase
+            ? `${latestHomeInsights.phase[0].toUpperCase()}${latestHomeInsights.phase.slice(1)} phase`
+            : undefined
+        )
       };
 
       setMessages((prev) => [...prev, aiMessage]);
@@ -177,18 +226,18 @@ export function GemmaChatScreen({
   };
 
   return (
-    <div className="flex flex-col h-full bg-[var(--flowfit-off-white)]">
+    <div className="flex flex-col h-full bg-[var(--PhaseFlow-off-white)]">
       {/* Header */}
       <div className="p-6 pt-12 bg-white border-b border-gray-200">
         <div className="flex items-center justify-between mb-3">
-          <button onClick={onBack} className="flex items-center gap-2 text-[var(--flowfit-sage)]">
+          <button onClick={onBack} className="flex items-center gap-2 text-[var(--PhaseFlow-sage)]">
             <ArrowLeft size={20} />
             <span>Back</span>
           </button>
           <GemmaBadge variant="privacy" />
         </div>
         <h2>Chat with Gemma</h2>
-        <p className="text-sm text-[var(--flowfit-text-secondary)]">
+        <p className="text-sm text-[var(--PhaseFlow-text-secondary)]">
           {userName ? `Your AI fitness coach, ${userName}` : 'Your AI fitness coach'}
         </p>
       </div>
@@ -209,13 +258,13 @@ export function GemmaChatScreen({
             <div className={`max-w-[84%] ${message.role === 'user' ? 'items-end' : 'items-start'}`}>
               <div
                 className={`text-xs mb-1 px-1 ${
-                  message.role === 'user' ? 'text-right text-[var(--flowfit-text-secondary)]' : 'text-[var(--flowfit-text-secondary)]'
+                  message.role === 'user' ? 'text-right text-[var(--PhaseFlow-text-secondary)]' : 'text-[var(--PhaseFlow-text-secondary)]'
                 }`}
               >
                 {message.role === 'user' ? (
                   'You'
                 ) : (
-                  <span className="inline-flex items-center gap-1.5 text-[var(--flowfit-sage)]">
+                  <span className="inline-flex items-center gap-1.5 text-[var(--PhaseFlow-sage)]">
                     <Sparkles size={12} />
                     <span>AI</span>
                   </span>
@@ -225,21 +274,30 @@ export function GemmaChatScreen({
               <div
                 className={`p-4 rounded-2xl shadow-sm ${
                   message.role === 'user'
-                    ? 'bg-[var(--flowfit-sage)] text-white rounded-br-md'
-                    : 'bg-white text-[var(--flowfit-text-primary)] rounded-bl-md border border-gray-100'
+                    ? 'bg-[var(--PhaseFlow-sage)] text-white rounded-br-md'
+                    : 'bg-white text-[var(--PhaseFlow-text-primary)] rounded-bl-md border border-gray-100'
                 }`}
               >
-                <div className={message.role === 'user' ? 'text-white [&_strong]:font-semibold [&_strong]:text-white' : '[&_strong]:font-semibold [&_strong]:text-[var(--flowfit-text-primary)]'}>
+                <div className={message.role === 'user' ? 'text-white [&_strong]:font-semibold [&_strong]:text-white' : '[&_strong]:font-semibold [&_strong]:text-[var(--PhaseFlow-text-primary)]'}>
                   {renderMessageContent(message.content)}
                 </div>
 
                 <div
                   className={`mt-2 text-[11px] ${
-                    message.role === 'user' ? 'text-white/80 text-right' : 'text-[var(--flowfit-text-secondary)]'
+                    message.role === 'user' ? 'text-white/80 text-right' : 'text-[var(--PhaseFlow-text-secondary)]'
                   }`}
                 >
                   {formatTimestamp(message.timestamp)}
                 </div>
+
+                {message.role === 'assistant' && message.workoutPlan && (
+                  <button
+                    onClick={() => onStartWorkoutFromChat?.(message.workoutPlan as WorkoutRecommendation)}
+                    className="mt-3 w-full px-3 py-2 rounded-lg bg-[var(--PhaseFlow-sage)] text-white text-sm"
+                  >
+                    Start this workout
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -269,7 +327,7 @@ export function GemmaChatScreen({
                 key={index}
                 onClick={() => handleSend(prompt)}
                 disabled={isTyping}
-                className="px-4 py-2 bg-white rounded-full text-sm text-[var(--flowfit-text-primary)] border border-gray-200 whitespace-nowrap hover:border-[var(--flowfit-sage)] transition-colors"
+                className="px-4 py-2 bg-white rounded-full text-sm text-[var(--PhaseFlow-text-primary)] border border-gray-200 whitespace-nowrap hover:border-[var(--PhaseFlow-sage)] transition-colors"
               >
                 {prompt}
               </button>
@@ -279,7 +337,7 @@ export function GemmaChatScreen({
       )}
 
       {/* Input */}
-      <div className="p-4 mb-16 bg-white border-t border-gray-200">
+      <div className="p-4 mb-12 bg-white border-t border-gray-200">
         <div className="flex gap-2">
           <input
             type="text"
@@ -287,13 +345,13 @@ export function GemmaChatScreen({
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSend()}
             placeholder="Ask Gemma"
-            className="flex-1 px-4 py-3 rounded-xl bg-[var(--flowfit-off-white)] border-2 border-transparent focus:border-[var(--flowfit-sage)] transition-colors"
+            className="flex-1 px-4 py-3 rounded-xl bg-[var(--PhaseFlow-off-white)] border-2 border-transparent focus:border-[var(--PhaseFlow-sage)] transition-colors"
             disabled={isTyping}
           />
           <button
             onClick={() => handleSend()}
             disabled={!input.trim() || isTyping}
-            className="p-3 rounded-xl bg-[var(--flowfit-sage)] text-white disabled:bg-gray-300 disabled:text-gray-500 transition-colors min-w-[44px]"
+            className="p-3 rounded-xl bg-[var(--PhaseFlow-sage)] text-white disabled:bg-gray-300 disabled:text-gray-500 transition-colors min-w-[44px]"
           >
             <Send size={20} />
           </button>

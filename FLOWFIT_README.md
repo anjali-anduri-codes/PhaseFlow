@@ -1,16 +1,16 @@
-# FlowFit - Cycle-Synced Fitness App
+# PhaseFlow - Cycle-Synced Fitness App
 
 **Tagline:** "Train with your cycle, not against it."
 
 **Team:** Infradian Labs
 
-FlowFit is a mobile fitness app that provides personalized workout recommendations based on menstrual cycle phases and energy levels, powered by Gemma 4 AI.
+PhaseFlow is a mobile fitness app that provides personalized workout recommendations based on menstrual cycle phases and energy levels, powered by Gemma 4 AI.
 
 ---
 
 ## Inclusivity Principles
 
-FlowFit is designed for **all menstruators**, regardless of gender identity. Every design decision reflects this commitment:
+PhaseFlow is designed for **all menstruators**, regardless of gender identity. Every design decision reflects this commitment:
 
 ### Language
 - ✅ Use: "menstruators", "people who cycle", "you", "your body"
@@ -193,7 +193,7 @@ See [API_INTEGRATION.md](./API_INTEGRATION.md) for detailed API documentation.
 
 ## Credits
 
-**Design & Development:** FlowFit Team  
+**Design & Development:** PhaseFlow Team  
 **Organization:** Infradian Labs  
 **AI Partner:** Google Gemma 4  
 **Cycle Data Partners:** Apple Health, Google Health

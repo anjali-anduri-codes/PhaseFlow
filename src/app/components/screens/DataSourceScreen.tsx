@@ -41,7 +41,7 @@ export function DataSourceScreen({ onNext }: DataSourceScreenProps) {
               onClick={() => setSelected(source.id)}
               className={`w-full p-4 rounded-xl flex items-start gap-4 transition-all border-2 min-h-[72px] ${
                 selected === source.id
-                  ? 'border-[var(--flowfit-sage)] bg-[var(--flowfit-off-white)]'
+                  ? 'border-[var(--PhaseFlow-sage)] bg-[var(--PhaseFlow-off-white)]'
                   : 'border-transparent bg-white'
               }`}
             >
@@ -49,15 +49,15 @@ export function DataSourceScreen({ onNext }: DataSourceScreenProps) {
                 className="p-2 rounded-lg"
                 style={{
                   backgroundColor:
-                    selected === source.id ? 'var(--flowfit-sage)' : 'var(--flowfit-off-white)',
-                  color: selected === source.id ? 'white' : 'var(--flowfit-text-primary)'
+                    selected === source.id ? 'var(--PhaseFlow-sage)' : 'var(--PhaseFlow-off-white)',
+                  color: selected === source.id ? 'white' : 'var(--PhaseFlow-text-primary)'
                 }}
               >
                 <Icon size={20} />
               </div>
               <div className="flex-1 text-left">
                 <h4>{source.label}</h4>
-                <p className="text-sm text-[var(--flowfit-text-secondary)]">
+                <p className="text-sm text-[var(--PhaseFlow-text-secondary)]">
                   {source.description}
                 </p>
               </div>
@@ -67,9 +67,9 @@ export function DataSourceScreen({ onNext }: DataSourceScreenProps) {
                   height="24" 
                   viewBox="0 0 24 24" 
                   fill="none"
-                  className="flowfit-selection-circle"
+                  className="PhaseFlow-selection-circle"
                 >
-                  <circle cx="12" cy="12" r="10" fill="var(--flowfit-sage)" />
+                  <circle cx="12" cy="12" r="10" fill="var(--PhaseFlow-sage)" />
                   <path
                     d="M8 12l2 2 4-4"
                     stroke="white"
@@ -85,7 +85,7 @@ export function DataSourceScreen({ onNext }: DataSourceScreenProps) {
       </div>
 
       {selected === 'google' && (
-        <p className="text-xs text-center text-[var(--flowfit-text-secondary)] mb-4">
+        <p className="text-xs text-center text-[var(--PhaseFlow-text-secondary)] mb-4">
           Google Fit sync uses secure account permissions only.
         </p>
       )}
