@@ -24,6 +24,13 @@ interface GemmaChatScreenProps {
   goals?: string[];
   latestHomeInsights?: HomeInsights | null;
   onStartWorkoutFromChat?: (plan: WorkoutRecommendation) => void;
+  onSaveWorkoutFromChat?: (plan: WorkoutRecommendation) => void;
+}
+
+interface WorkoutSections {
+  warmup: string[];
+  main: string[];
+  cooldown: string[];
 }
 
 function extractWorkoutPlanFromText(
@@ -32,7 +39,7 @@ function extractWorkoutPlanFromText(
 ): WorkoutRecommendation | null {
   const normalized = content.replace(/\r/g, '').trim();
   const hasWorkoutSignals =
-    /(warm[-\s]?up|main workout|cool[-\s]?down|sets?\s*of|sets?\s*x|reps?|seconds?|minutes?)/i.test(
+    /(workout|routine|training|session|warm[-\s]?up|main workout|cool[-\s]?down|sets?\s*of|sets?\s*x|reps?|seconds?|minutes?)/i.test(
       normalized
     );
 
@@ -40,13 +47,34 @@ function extractWorkoutPlanFromText(
     return null;
   }
 
-  const exerciseMatches = [...normalized.matchAll(/([A-Za-z][A-Za-z\s\-']{2,40}):\s*(\d+\s*sets?\s*(?:x|of)?\s*\d+\s*(?:reps?|seconds?|sec|minutes?|mins)?(?:\s*each side)?)/gi)];
-  const exercises = exerciseMatches
-    .map((match) => `${match[1].trim()} - ${match[2].trim()}`)
+  const exerciseMatches = [
+    ...normalized.matchAll(
+      /([A-Za-z][A-Za-z\s\-']{2,40}):\s*(\d+\s*sets?\s*(?:x|of)?\s*\d+\s*(?:reps?|seconds?|sec|minutes?|mins)?(?:\s*each side)?)/gi
+    )
+  ];
+
+  const bulletExerciseMatches = [
+    ...normalized.matchAll(
+      /(?:^|\n)\s*[-*•]?\s*([A-Za-z][A-Za-z\s\-']{2,60}\s*(?:-\s*)?(?:\d+\s*(?:reps?|seconds?|sec|minutes?|mins)|\d+\s*sets?\s*x\s*\d+[^\n.,;]*))/gim
+    )
+  ];
+
+  const inlineExerciseMatches = [
+    ...normalized.matchAll(
+      /(?:^|[;,.]\s*|\-\s*)([A-Za-z][A-Za-z\s\-']{2,60}\s*(?:x\s*\d+|\d+\s*(?:reps?|seconds?|sec|minutes?|mins))(?:\s*(?:\/|per)\s*side)?)/gim
+    )
+  ];
+
+  const exercises = [
+    ...exerciseMatches.map((match) => `${match[1].trim()} - ${match[2].trim()}`),
+    ...bulletExerciseMatches.map((match) => match[1].trim()),
+    ...inlineExerciseMatches.map((match) => match[1].trim())
+  ]
     .filter(Boolean)
+    .filter((value, index, list) => list.indexOf(value) === index)
     .slice(0, 4);
 
-  if (exercises.length < 2) {
+  if (exercises.length < 2 && !/(warm[-\s]?up|main|cool[-\s]?down)/i.test(normalized)) {
     return null;
   }
 
@@ -64,6 +92,91 @@ function extractWorkoutPlanFromText(
     exercises,
     warmup: warmupMatch?.[1]?.trim() || '5 minutes of gentle dynamic warm-up.'
   };
+}
+
+function extractWorkoutSections(content: string, plan: WorkoutRecommendation): WorkoutSections {
+  const normalized = content.replace(/\r/g, '').trim();
+  const lines = normalized
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => line.replace(/^[-*•]\s*/, ''));
+
+  const warmup: string[] = [];
+  const main: string[] = [];
+  const cooldown: string[] = [];
+  let section: 'warmup' | 'main' | 'cooldown' | null = null;
+
+  for (const line of lines) {
+    if (/warm[-\s]?up/i.test(line)) {
+      section = 'warmup';
+      const detail = line.replace(/warm[-\s]?up\s*:?\s*/i, '').trim();
+      if (detail) {
+        warmup.push(detail);
+      }
+      continue;
+    }
+
+    if (/(main workout|strength|interval|main|circuit)/i.test(line)) {
+      section = 'main';
+      const detail = line.replace(/(main workout|strength|interval|main|circuit)\s*:?\s*/i, '').trim();
+      if (detail && /\d|reps?|sets?|sec|min/i.test(detail)) {
+        main.push(detail);
+      }
+      continue;
+    }
+
+    if (/cool[-\s]?down/i.test(line)) {
+      section = 'cooldown';
+      const detail = line.replace(/cool[-\s]?down\s*:?\s*/i, '').trim();
+      if (detail) {
+        cooldown.push(detail);
+      }
+      continue;
+    }
+
+    if (!section) {
+      continue;
+    }
+
+    if (section === 'warmup') {
+      warmup.push(line);
+    }
+    if (section === 'main') {
+      main.push(line);
+    }
+    if (section === 'cooldown') {
+      cooldown.push(line);
+    }
+  }
+
+  const dedupe = (items: string[]) =>
+    items
+      .filter(Boolean)
+      .filter((item, index, list) => list.indexOf(item) === index)
+      .slice(0, 4);
+
+  return {
+    warmup: dedupe(warmup.length ? warmup : [plan.warmup || '5 minutes of dynamic warm-up.']),
+    main: dedupe(main.length ? main : plan.exercises),
+    cooldown: dedupe(
+      cooldown.length
+        ? cooldown
+        : ['Child\'s pose breathing - 60 sec', 'Hamstring stretch - 45 sec per side']
+    )
+  };
+}
+
+function buildWorkoutChips(plan: WorkoutRecommendation, content: string): string[] {
+  const chips = [plan.duration, plan.intensity, plan.phase];
+
+  if (/(dumbbell|kettlebell|barbell|band|bench|machine)/i.test(content)) {
+    chips.push('Equipment');
+  } else {
+    chips.push('Bodyweight-friendly');
+  }
+
+  return chips.filter(Boolean).slice(0, 4);
 }
 
 function renderInlineFormatting(text: string): ReactNode[] {
@@ -155,12 +268,14 @@ export function GemmaChatScreen({
   cycleContext,
   goals = [],
   latestHomeInsights,
-  onStartWorkoutFromChat
+  onStartWorkoutFromChat,
+  onSaveWorkoutFromChat
 }: GemmaChatScreenProps) {
   const [messages, setMessages] = useState<Message[]>(() => [createInitialMessage(userName)]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [savedMessageIds, setSavedMessageIds] = useState<Record<string, boolean>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -223,6 +338,32 @@ export function GemmaChatScreen({
     } finally {
       setIsTyping(false);
     }
+  };
+
+  const handleRegenerateWorkout = async (
+    message: Message,
+    mode: 'easier' | 'harder'
+  ): Promise<void> => {
+    if (!message.workoutPlan || isTyping) {
+      return;
+    }
+
+    const exerciseText = message.workoutPlan.exercises.join('; ');
+    const prompt =
+      mode === 'easier'
+        ? `Please regenerate this workout as an easier low-impact version for lower energy today. Keep warm-up, main, and cool-down. Base plan: ${exerciseText}`
+        : `Please regenerate this workout as a harder version for a stronger training day. Keep warm-up, main, and cool-down. Base plan: ${exerciseText}`;
+
+    await handleSend(prompt);
+  };
+
+  const handleSaveWorkout = (message: Message): void => {
+    if (!message.workoutPlan || savedMessageIds[message.id]) {
+      return;
+    }
+
+    onSaveWorkoutFromChat?.(message.workoutPlan);
+    setSavedMessageIds((prev) => ({ ...prev, [message.id]: true }));
   };
 
   return (
@@ -291,13 +432,76 @@ export function GemmaChatScreen({
                 </div>
 
                 {message.role === 'assistant' && message.workoutPlan && (
-                  <button
-                    onClick={() => onStartWorkoutFromChat?.(message.workoutPlan as WorkoutRecommendation)}
-                    className="mt-3 w-full px-3 py-2 rounded-lg bg-[var(--PhaseFlow-sage)] text-white text-sm"
-                  >
-                    Start this workout
-                  </button>
+                  <div className="mt-3 rounded-xl border border-[var(--PhaseFlow-mint)] bg-[var(--PhaseFlow-mint)]/20 p-3">
+                    <p className="text-xs uppercase tracking-wide text-[var(--PhaseFlow-text-secondary)] mb-1">
+                      Generated workout
+                    </p>
+                    <h4 className="text-sm mb-1">{message.workoutPlan.name}</h4>
+                    <div className="flex flex-wrap gap-1.5 mb-2">
+                      {buildWorkoutChips(message.workoutPlan, message.content).map((chip) => (
+                        <span
+                          key={`${message.id}-${chip}`}
+                          className="px-2 py-1 rounded-full text-[11px] bg-white border border-[var(--PhaseFlow-mint)] text-[var(--PhaseFlow-text-secondary)]"
+                        >
+                          {chip}
+                        </span>
+                      ))}
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-2">
+                      {[
+                        { label: 'Warm-up', items: extractWorkoutSections(message.content, message.workoutPlan).warmup },
+                        { label: 'Main', items: extractWorkoutSections(message.content, message.workoutPlan).main },
+                        { label: 'Cool-down', items: extractWorkoutSections(message.content, message.workoutPlan).cooldown }
+                      ].map((section) => (
+                        <div key={`${message.id}-${section.label}`} className="rounded-lg bg-white/80 p-2 border border-white">
+                          <p className="text-[11px] uppercase tracking-wide text-[var(--PhaseFlow-text-secondary)] mb-1">
+                            {section.label}
+                          </p>
+                          <ul className="space-y-1">
+                            {section.items.slice(0, 2).map((item) => (
+                              <li key={`${section.label}-${item}`} className="text-xs text-[var(--PhaseFlow-text-primary)]">
+                                • {item}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="mt-2 flex gap-2">
+                      <button
+                        onClick={() => handleRegenerateWorkout(message, 'easier')}
+                        className="flex-1 px-2 py-1.5 rounded-lg bg-white border border-gray-200 text-xs"
+                        disabled={isTyping}
+                      >
+                        Make easier
+                      </button>
+                      <button
+                        onClick={() => handleRegenerateWorkout(message, 'harder')}
+                        className="flex-1 px-2 py-1.5 rounded-lg bg-white border border-gray-200 text-xs"
+                        disabled={isTyping}
+                      >
+                        Make harder
+                      </button>
+                    </div>
+
+                    <button
+                      onClick={() => onStartWorkoutFromChat?.(message.workoutPlan as WorkoutRecommendation)}
+                      className="mt-2 w-full px-3 py-2 rounded-lg bg-[var(--PhaseFlow-sage)] text-white text-sm"
+                    >
+                      Start workout
+                    </button>
+
+                    <button
+                      onClick={() => handleSaveWorkout(message)}
+                      className="mt-2 w-full px-3 py-2 rounded-lg bg-white border border-[var(--PhaseFlow-sage)] text-[var(--PhaseFlow-sage)] text-sm"
+                    >
+                      {savedMessageIds[message.id] ? 'Saved to Your Workouts' : 'Save to Your Workouts'}
+                    </button>
+                  </div>
                 )}
+
               </div>
             </div>
           </div>

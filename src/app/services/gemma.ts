@@ -107,6 +107,14 @@ function normalizeGemmaErrorMessage(raw: string): string {
     return 'RESOURCE_EXHAUSTED: Project quota/rate limit reached for Gemma.';
   }
 
+  if (raw.includes('INTERNAL')) {
+    return 'INTERNAL: Gemma had a temporary upstream error. Please retry in a few seconds.';
+  }
+
+  if (raw.includes('UNAVAILABLE')) {
+    return 'UNAVAILABLE: Gemma service is temporarily unavailable. Please retry shortly.';
+  }
+
   return raw;
 }
 
@@ -349,7 +357,7 @@ function sanitizeChatReply(raw: string): string {
   }
 
   const leakedPlanning =
-    /(Persona:|Constraint:|Current User State:|Draft\s*\d+|Cycle Status:|Style:|Characteristics:|Current Goal:|Context:|Structure:|No labels\?:|Gemma\s*4)/i;
+    /(Persona:|Constraint:|Current User State:|Draft\s*\d+|Cycle Status:|Style:|Characteristics:|Current Goal:|Context:|Structure:|No labels\?:|Gemma\s*4|Tone:|Length:|Conversation so far:|User message:|Reply as assistant)/i;
   if (leakedPlanning.test(text)) {
     const draftMatch = text.match(/Draft\s*\d+\s*:\*?\s*([\s\S]*)/i);
     if (draftMatch?.[1]) {
@@ -361,12 +369,7 @@ function sanitizeChatReply(raw: string): string {
       .map((line) => line.trim())
       .filter(Boolean)
       .map((line) => line.replace(/^[-*]\s*/, ''))
-      .filter(
-        (line) =>
-          !/^(Gemma\s*4|Style|Characteristics|Current Goal|Context|Structure|Persona|User|Cycle Status|Current User State|Goal|Constraint|Phase|Typical hormonal shift|Acknowledge|Explain|Suggest|Recommend|Encourage|Concise\?|Supportive\?|Practical\?|No medical diagnosis\?|Under 140 words\?|Addressed .+\?|Cycle-aware\?|No labels\?)/i.test(
-            line
-          )
-      )
+      .filter((line) => !isInstructionLine(line))
       .join(' ')
       .trim();
 
@@ -384,8 +387,30 @@ function sanitizeChatReply(raw: string): string {
     .replace(/^Style:\s*.*$/gim, '')
     .replace(/^Characteristics:\s*.*$/gim, '')
     .replace(/^No labels\?:\s*.*$/gim, '')
+    .replace(/^Tone:\s*.*$/gim, '')
+    .replace(/^Length:\s*.*$/gim, '')
+    .replace(/^Address\s+.*$/gim, '')
+    .replace(/^Be\s+supportive\.?$/gim, '')
+    .replace(/^Keep\s+it\s+concise\.?$/gim, '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .filter((line) => !isInstructionLine(line))
+    .join(' ')
     .replace(/\s{2,}/g, ' ')
     .trim();
+}
+
+function isInstructionLine(line: string): boolean {
+  return /^(Gemma\s*4|Style|Characteristics|Current Goal|Context|Structure|Persona|User|Cycle Status|Current User State|Goal|Constraint|Phase|Typical hormonal shift|Acknowledge|Explain|Suggest|Recommend|Encourage|Concise\?|Supportive\?|Practical\?|No medical diagnosis\?|Under 140 words\?|Addressed .+\?|Cycle-aware\?|No labels\?|Tone|Length|Conversation so far|User message|Reply as assistant|Warm-up \(\d+ mins\)|Main Workout|Cool-down \(\d+ mins\)|Be supportive|Keep it concise)$/i.test(
+    line
+  );
+}
+
+function containsPromptLeak(text: string): boolean {
+  return /(tone:\s|length:\s|conversation so far:|user message:|reply as assistant|be supportive\.?|keep it concise\.?|output only the final answer|address\s+\w+)/i.test(
+    text
+  );
 }
 
 function normalizeForEchoCheck(text: string): string {
@@ -412,7 +437,45 @@ function isEchoResponse(reply: string, userMessage: string): boolean {
     return true;
   }
 
+  const userTokens = normalizedUser.split(' ').filter((word) => word.length >= 4);
+  if (userTokens.length >= 5) {
+    let overlap = 0;
+    for (const token of userTokens) {
+      if (normalizedReply.includes(token)) {
+        overlap += 1;
+      }
+    }
+
+    const overlapRatio = overlap / userTokens.length;
+    if (overlapRatio >= 0.8 && normalizedReply.length <= normalizedUser.length * 1.4) {
+      return true;
+    }
+  }
+
   return false;
+}
+
+function userAskedForWorkout(userMessage: string): boolean {
+  return /(workout|routine|exercise|training|session|warm[-\s]?up|cool[-\s]?down|detailed workout flow|plan)/i.test(
+    userMessage
+  );
+}
+
+function getWorkoutFallbackReply(userName: string | undefined, currentPhase: Phase | 'unknown'): string {
+  const intro = userName ? `Hi ${userName},` : 'Here is a practical workout flow:';
+  const phaseLine =
+    currentPhase !== 'unknown'
+      ? `For your ${currentPhase} phase, keep effort steady and controlled.`
+      : 'Keep effort steady and controlled, and adjust intensity to your energy today.';
+
+  return [
+    intro,
+    phaseLine,
+    'Warm-up (5 min): arm circles, leg swings, cat-cow, bodyweight squats.',
+    'Main (20-25 min): 3 rounds - squats x12, incline push-ups x10, glute bridges x15, dead bug x10/side; rest 45-60 sec.',
+    'Finisher (4 min): brisk march or low-impact step intervals (40 sec on, 20 sec easy).',
+    'Cool-down (5 min): child\'s pose, hamstring stretch, hip flexor stretch, slow breathing.'
+  ].join(' ');
 }
 
 export async function sendChatMessage(
@@ -442,6 +505,7 @@ export async function sendChatMessage(
     'Give concise, supportive, practical advice.',
     'Avoid medical diagnosis. If symptoms seem severe, recommend professional care.',
     'Keep responses under 140 words unless user asks for more detail.',
+    'Do not repeat the user message back. Give fresh, concrete coaching content.',
     'Output only the final answer to the user. Do not output analysis, planning notes, bullets about constraints, drafts, or self-evaluation.',
     'Never include labels such as Persona, User, Cycle Status, Goal, Constraint, Draft, or checklists.',
     userName ? `The user is named ${userName}. Address them by name naturally.` : 'Use a warm conversational tone.',
@@ -464,7 +528,11 @@ export async function sendChatMessage(
   const raw = await callGemma(prompt, { expectsJson: false });
   const cleaned = sanitizeChatReply(raw);
 
-  if (isEchoResponse(cleaned, userMessage)) {
+  if (!cleaned || containsPromptLeak(cleaned) || isEchoResponse(cleaned, userMessage)) {
+    if (userAskedForWorkout(userMessage)) {
+      return getWorkoutFallbackReply(userName, currentPhase);
+    }
+
     const greeting = userName ? `Hi ${userName}, ` : '';
     const phaseText = currentPhase !== 'unknown' ? `in your ${currentPhase} phase` : 'today';
     return `${greeting}thanks for sharing. Based on where you are ${phaseText}, try a 5-minute warm-up, then 2-3 focused strength or low-impact intervals, and finish with a short cool-down. Keep intensity at a level where you can still breathe steadily, and adjust if your energy dips.`;

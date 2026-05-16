@@ -319,6 +319,10 @@ export default function App() {
             cycleContext={onboardingCycle}
             goals={onboardingGoals}
             latestHomeInsights={latestHomeInsights}
+            onSaveWorkoutFromChat={(plan) => {
+              const saved = saveGeneratedWorkout(plan);
+              setSavedGeneratedWorkouts((prev) => [saved, ...prev].slice(0, 30));
+            }}
             onStartWorkoutFromChat={(plan) => {
               const saved = saveGeneratedWorkout(plan);
               setSavedGeneratedWorkouts((prev) => [saved, ...prev].slice(0, 30));
