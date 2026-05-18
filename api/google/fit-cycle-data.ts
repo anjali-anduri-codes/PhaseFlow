@@ -44,7 +44,7 @@ async function fetchCycleData(accessToken: string): Promise<boolean> {
     }
 
     const sourcesData = await sourcesResponse.json() as {
-      dataSource?: Array<{ dataType?: { name?: string } }>;
+      dataSource?: Array<{ _id?: string; dataType?: { name?: string } }>;
     };
     const sources = sourcesData.dataSource || [];
 

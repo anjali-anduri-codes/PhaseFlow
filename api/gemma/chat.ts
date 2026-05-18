@@ -20,7 +20,8 @@ interface GemmaResponse {
 }
 
 const PRIMARY_GEMMA_MODEL = 'gemma-4-31b-it' as const;
-const MAX_RETRY_ATTEMPTS = 2;
+const MAX_RETRY_ATTEMPTS = 1;
+const GEMMA_FETCH_TIMEOUT_MS = 8500;
 
 interface ParsedGemmaError {
   code?: number;
@@ -96,6 +97,10 @@ function normalizeGemmaApiError(raw: string): string {
     return 'UNAVAILABLE: Gemma service is temporarily unavailable. Please retry shortly.';
   }
 
+  if (combined.includes('timed out') || combined.includes('timeout') || combined.includes('504')) {
+    return 'TIMEOUT: Gemma request timed out. Please retry with a shorter prompt.';
+  }
+
   if (parsed.message && parsed.message.trim()) {
     return parsed.message;
   }
@@ -131,28 +136,59 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     let data: GemmaResponse | null = null;
 
     for (let attempt = 0; attempt <= MAX_RETRY_ATTEMPTS; attempt += 1) {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            contents: [
-              {
-                role: 'user',
-                parts: [{ text: prompt }]
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+      }, GEMMA_FETCH_TIMEOUT_MS);
+
+      let response: Response;
+      try {
+        response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            signal: controller.signal,
+            body: JSON.stringify({
+              contents: [
+                {
+                  role: 'user',
+                  parts: [{ text: prompt }]
+                }
+              ],
+              generationConfig: {
+                temperature: 0.7,
+                maxOutputTokens: expectsJson ? 1500 : 700,
+                ...(expectsJson ? { responseMimeType: 'application/json' } : {})
               }
-            ],
-            generationConfig: {
-              temperature: 0.7,
-              maxOutputTokens: expectsJson ? 1500 : 700,
-              ...(expectsJson ? { responseMimeType: 'application/json' } : {})
-            }
-          })
+            })
+          }
+        );
+      } catch (error) {
+        clearTimeout(timeoutId);
+
+        const isTimeout = error instanceof Error && error.name === 'AbortError';
+        lastErrorStatus = isTimeout ? 504 : 500;
+        lastErrorBody = isTimeout
+          ? `Gemma upstream timed out after ${GEMMA_FETCH_TIMEOUT_MS}ms`
+          : error instanceof Error
+          ? error.message
+          : 'Unknown Gemma fetch error';
+
+        if (attempt < MAX_RETRY_ATTEMPTS) {
+          await sleep(300 * (attempt + 1));
+          continue;
         }
-      );
+
+        res.status(lastErrorStatus).json({
+          error: `Gemma API error (${model}): ${normalizeGemmaApiError(lastErrorBody)}`
+        });
+        return;
+      }
+
+      clearTimeout(timeoutId);
 
       if (response.ok) {
         data = (await response.json()) as GemmaResponse;

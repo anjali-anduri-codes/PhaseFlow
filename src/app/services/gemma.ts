@@ -167,8 +167,17 @@ async function callGemmaViaBackend(prompt: string, options?: CallGemmaOptions): 
   });
 
   if (!response.ok) {
-    const errorData = (await response.json().catch(() => ({}))) as { error?: string };
-    throw new Error(normalizeGemmaErrorMessage(errorData.error || 'Gemma request failed'));
+    const errorData = (await response.json().catch(() => ({}))) as {
+      error?: unknown;
+      message?: string;
+      code?: string | number;
+    };
+    const rawError =
+      errorData.error ??
+      errorData.message ??
+      (errorData.code ? `Gemma request failed (${errorData.code})` : undefined) ??
+      'Gemma request failed';
+    throw new Error(normalizeGemmaErrorMessage(rawError));
   }
 
   const data = (await response.json()) as { text?: string };
