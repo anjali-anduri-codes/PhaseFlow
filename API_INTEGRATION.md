@@ -222,6 +222,41 @@ Accept: application/json
 
 ---
 
+#### `POST /api/google/sync-state`
+**Purpose:** Persist Google auth/sync status to backend DB (Supabase)
+
+**Request:**
+```json
+{
+  "deviceId": "f7f4d2f1-2a41-4bb7-b8ad-1f43f3f59c72",
+  "source": "google",
+  "googleAuthenticated": true,
+  "googleConsentGranted": true,
+  "hasCycleData": true
+}
+```
+
+**Response (Success):**
+```json
+{
+  "success": true
+}
+```
+
+**Response (Error):**
+```json
+{
+  "error": "Failed to persist sync state",
+  "message": "<provider error details>"
+}
+```
+
+**Environment Variables Required:**
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+
+---
+
 ### Deployment (Vercel)
 
 **1. Create Vercel Functions**

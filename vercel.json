@@ -16,6 +16,10 @@
     "api/google/fit-cycle-data.ts": {
       "memory": 128,
       "maxDuration": 10
+    },
+    "api/google/sync-state.ts": {
+      "memory": 128,
+      "maxDuration": 10
     }
   },
   "headers": [

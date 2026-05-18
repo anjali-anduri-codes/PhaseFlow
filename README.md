@@ -51,6 +51,54 @@
   - Token exchange happens automatically in the background
   - Cycle data sync follows on the next screen
 
+    ## 5) Google Fit / Google Auth (Production Checklist)
+
+    1. In Google Cloud Console, enable APIs:
+      - Google Fitness API
+      - OAuth consent screen configuration
+    2. OAuth Web App redirect URIs must include:
+      - `http://localhost:5173/oauth/google/callback`
+      - `https://<your-vercel-domain>/oauth/google/callback`
+    3. In Vercel env vars, set:
+      - `VITE_GOOGLE_CLIENT_ID`
+      - `GOOGLE_CLIENT_SECRET`
+      - `VITE_GOOGLE_REDIRECT_URI`
+    4. Frontend env must point to deployed backend:
+      - `VITE_API_BASE_URL=https://<your-vercel-domain>`
+
+    ## 6) Connect Data to Backend DB
+
+    The app now persists Google sync metadata via backend endpoint:
+
+    - `POST /api/google/sync-state`
+
+    This endpoint upserts records into Supabase table `google_sync_state`.
+
+    1. Create the table using [DB_SETUP.md](DB_SETUP.md).
+    2. Add Vercel env vars:
+      - `SUPABASE_URL`
+      - `SUPABASE_SERVICE_ROLE_KEY`
+    3. Deploy. Each successful Google Fit sync now writes:
+      - `device_id`
+      - `google_authenticated`
+      - `google_consent_granted`
+      - `has_cycle_data`
+      - `synced_at`
+
+    ## 7) Where and How to Host (Vercel)
+
+    1. Keep frontend + API functions in this same repo (already configured for Vercel).
+    2. Push repo to GitHub.
+    3. In Vercel:
+      - Create New Project -> Import this repo
+      - Add all env vars (Google, Gemma, Supabase)
+      - Deploy to Production
+    4. In Google Cloud Console, update OAuth redirect URI to your final Vercel domain.
+    5. Validate production flow:
+      - Google login works
+      - `/api/google/fit-cycle-data` returns success
+      - `/api/google/sync-state` writes rows in Supabase
+
   For detailed API integration guide, see [API_INTEGRATION.md](API_INTEGRATION.md).
   
   

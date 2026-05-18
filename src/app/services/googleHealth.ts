@@ -1,5 +1,6 @@
 const STORAGE_KEYS = {
   dataSource: 'PhaseFlow.dataSource',
+  deviceId: 'PhaseFlow.deviceId',
   googleAuthenticated: 'PhaseFlow.google.authenticated',
   googleConsentGranted: 'PhaseFlow.google.consentGranted',
   googleAccessToken: 'PhaseFlow.google.accessToken',
@@ -25,6 +26,14 @@ interface SyncResult {
   error?: string;
 }
 
+interface SyncStatePayload {
+  deviceId: string;
+  source: 'google' | 'manual';
+  googleAuthenticated: boolean;
+  googleConsentGranted: boolean;
+  hasCycleData: boolean;
+}
+
 function safeGetStorage(key: string): string | null {
   try {
     return window.localStorage.getItem(key);
@@ -38,6 +47,48 @@ function safeSetStorage(key: string, value: string): void {
     window.localStorage.setItem(key, value);
   } catch {
     // Ignore storage write errors in restricted environments.
+  }
+}
+
+function getApiBaseUrl(): string {
+  return (
+    (import.meta.env.VITE_API_BASE_URL as string | undefined) ||
+    (typeof window !== 'undefined' ? window.location.origin : '')
+  );
+}
+
+function getOrCreateDeviceId(): string {
+  const existing = safeGetStorage(STORAGE_KEYS.deviceId);
+  if (existing) {
+    return existing;
+  }
+
+  let newId = '';
+
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    newId = crypto.randomUUID();
+  } else {
+    newId = `device_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+  }
+
+  safeSetStorage(STORAGE_KEYS.deviceId, newId);
+  return newId;
+}
+
+async function persistGoogleSyncState(payload: SyncStatePayload): Promise<void> {
+  const response = await fetch(`${getApiBaseUrl()}/api/google/sync-state`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json'
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    const errorBody = (await response.json().catch(() => ({}))) as { error?: string; message?: string };
+    const message = errorBody.error || errorBody.message || 'Failed to persist Google sync state';
+    throw new Error(message);
   }
 }
 
@@ -203,11 +254,7 @@ async function launchOAuthPopup(url: string, redirectUri: string, expectedState:
 
 async function exchangeCodeForToken(code: string, state: string): Promise<{ success: boolean; error?: string }> {
   try {
-    // Determine backend URL
-    const baseUrl = import.meta.env.VITE_API_BASE_URL as string | undefined || 
-                   (typeof window !== 'undefined' ? window.location.origin : '');
-
-    const response = await fetch(`${baseUrl}/api/google/token`, {
+    const response = await fetch(`${getApiBaseUrl()}/api/google/token`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -339,11 +386,7 @@ export async function syncGoogleFitCycleData(): Promise<SyncResult> {
       };
     }
 
-    // Live mode: Call backend endpoint to fetch cycle data
-    const baseUrl = import.meta.env.VITE_API_BASE_URL as string | undefined || 
-                   (typeof window !== 'undefined' ? window.location.origin : '');
-    
-    const response = await fetch(`${baseUrl}/api/google/fit-cycle-data`, {
+    const response = await fetch(`${getApiBaseUrl()}/api/google/fit-cycle-data`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
@@ -376,6 +419,19 @@ export async function syncGoogleFitCycleData(): Promise<SyncResult> {
 
     safeSetStorage(STORAGE_KEYS.googleHasCycleData, String(hasCycleData));
     safeSetStorage(STORAGE_KEYS.googleNeedsManualCycleSetup, String(!hasCycleData));
+
+    // Best-effort backend sync for cross-device/backend analytics. Do not block UX on failure.
+    try {
+      await persistGoogleSyncState({
+        deviceId: getOrCreateDeviceId(),
+        source: 'google',
+        googleAuthenticated: getGoogleAuthState(),
+        googleConsentGranted: getGoogleConsentState(),
+        hasCycleData
+      });
+    } catch {
+      // Keep onboarding flow resilient even if DB persistence fails.
+    }
 
     return {
       success: true,

@@ -374,9 +374,20 @@ export default function App() {
   };
 
   return (
-    <div className="size-full flex items-center justify-center bg-[var(--PhaseFlow-off-white)]">
-      <div className="w-full max-w-[390px] h-full max-h-[844px] bg-[var(--PhaseFlow-off-white)] relative overflow-hidden shadow-2xl">
-        {renderScreen()}
+    <div className="min-h-screen w-full flex items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.98),_rgba(247,245,241,0.95)_38%,_rgba(232,236,233,0.82)_100%)] px-0 py-0 sm:px-6 sm:py-10">
+      <div className="relative w-full sm:w-auto">
+        <div className="pointer-events-none absolute left-[-4px] top-32 hidden h-14 w-[2px] rounded-full bg-black/18 sm:block" />
+        <div className="pointer-events-none absolute left-[-4px] top-48 hidden h-20 w-[2px] rounded-full bg-black/18 sm:block" />
+        <div className="pointer-events-none absolute right-[-4px] top-40 hidden h-24 w-[2px] rounded-full bg-black/18 sm:block" />
+
+        <div className="relative w-full overflow-hidden bg-[linear-gradient(180deg,#2c2c2e_0%,#151516_100%)] sm:w-[404px] sm:rounded-[2.9rem] sm:border-[6px] sm:border-[#2a2a2c] sm:shadow-[0_22px_56px_rgba(0,0,0,0.16)]">
+          <div className="pointer-events-none absolute left-1/2 top-3 z-30 hidden h-6 w-28 -translate-x-1/2 rounded-full bg-[#121212] sm:block" />
+          <div className="pointer-events-none absolute inset-x-10 top-[14px] z-20 hidden h-px bg-white/10 sm:block" />
+
+          <div className="w-full bg-[var(--PhaseFlow-off-white)] relative overflow-hidden min-h-screen sm:min-h-0 sm:h-[844px] sm:w-[390px] sm:rounded-[2.45rem]">
+            {renderScreen()}
+          </div>
+        </div>
       </div>
     </div>
   );
