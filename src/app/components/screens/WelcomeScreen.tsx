@@ -55,25 +55,25 @@ export function WelcomeScreen({ onNext }: WelcomeScreenProps) {
         <div className="text-center space-y-3">
           <p
             className="text-2xl tracking-[0.06em] text-[var(--PhaseFlow-sage)] font-extrabold leading-none"
-            style={{ animation: 'PhaseFlow-brand-settle 0.62s ease-out both' }}
+            style={{ animation: 'PhaseFlow-brand-settle 1.05s ease-out both' }}
           >
             PhaseFlow
           </p>
-          <h1 className="text-3xl" style={{ animation: 'PhaseFlow-fade-up 0.55s ease-out 0.35s both' }}>
+          <h1 className="text-3xl" style={{ animation: 'PhaseFlow-fade-up 0.95s ease-out 0.5s both' }}>
             Train with your cycle, not against it.
           </h1>
-          <p className="text-[var(--PhaseFlow-text-secondary)]" style={{ animation: 'PhaseFlow-fade-up 0.62s ease-out 0.52s both' }}>
+          <p className="text-[var(--PhaseFlow-text-secondary)]" style={{ animation: 'PhaseFlow-fade-up 1.05s ease-out 0.72s both' }}>
             Personalised workouts for every phase of your menstrual cycle.
           </p>
         </div>
 
-        <div style={{ animation: 'PhaseFlow-fade-up 0.6s ease-out 0.68s both' }}>
+        <div style={{ animation: 'PhaseFlow-fade-up 0.95s ease-out 0.92s both' }}>
           <PrimaryButton onClick={onNext}>
           Get started
           </PrimaryButton>
         </div>
 
-        <p className="text-xs text-center text-[var(--PhaseFlow-text-secondary)]" style={{ animation: 'PhaseFlow-fade-in 0.65s ease-out 0.8s both' }}>
+        <p className="text-xs text-center text-[var(--PhaseFlow-text-secondary)]" style={{ animation: 'PhaseFlow-fade-in 1.0s ease-out 1.1s both' }}>
           For all menstruators, regardless of gender identity.
         </p>
       </div>

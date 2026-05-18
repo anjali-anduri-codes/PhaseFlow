@@ -377,7 +377,7 @@ export default function App() {
     <div className="PhaseFlow-device-wall relative isolate min-h-screen w-full flex items-center justify-center overflow-hidden px-0 py-0 sm:px-6 sm:py-4">
       <div className="PhaseFlow-device-wall-orb PhaseFlow-device-wall-orb-a" />
       <div className="PhaseFlow-device-wall-orb PhaseFlow-device-wall-orb-b" />
-      <div className="PhaseFlow-device-wall-grid" />
+      <div className="PhaseFlow-device-wall-orb PhaseFlow-device-wall-orb-c" />
       <div className="relative z-10 w-full flex-shrink-0 sm:w-auto">
         <div className="pointer-events-none absolute left-[-4px] top-28 hidden h-16 w-[2px] rounded-full bg-[#585f68] sm:block" />
         <div className="pointer-events-none absolute left-[-4px] top-48 hidden h-24 w-[2px] rounded-full bg-[#585f68] sm:block" />

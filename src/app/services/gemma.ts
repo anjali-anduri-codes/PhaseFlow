@@ -94,28 +94,37 @@ export interface GemmaStatus {
   message: string;
 }
 
-function normalizeGemmaErrorMessage(raw: string): string {
-  if (raw.includes('PERMISSION_DENIED') || raw.includes('denied access')) {
+function normalizeGemmaErrorMessage(raw: unknown): string {
+  const normalizedRaw =
+    typeof raw === 'string'
+      ? raw
+      : raw instanceof Error
+      ? raw.message
+      : typeof raw === 'object' && raw !== null
+      ? JSON.stringify(raw)
+      : String(raw);
+
+  if (normalizedRaw.includes('PERMISSION_DENIED') || normalizedRaw.includes('denied access')) {
     return 'PERMISSION_DENIED: This Google Cloud project/key is denied Gemma access. Create/use a different Google Cloud project with Generative Language API + Gemma access enabled.';
   }
 
-  if (raw.includes('API_KEY_INVALID')) {
+  if (normalizedRaw.includes('API_KEY_INVALID')) {
     return 'API_KEY_INVALID: Your Gemma API key is invalid.';
   }
 
-  if (raw.includes('RESOURCE_EXHAUSTED') || raw.includes('quota')) {
+  if (normalizedRaw.includes('RESOURCE_EXHAUSTED') || normalizedRaw.includes('quota')) {
     return 'RESOURCE_EXHAUSTED: Project quota/rate limit reached for Gemma.';
   }
 
-  if (raw.includes('INTERNAL')) {
+  if (normalizedRaw.includes('INTERNAL')) {
     return 'INTERNAL: Gemma had a temporary upstream error. Please retry in a few seconds.';
   }
 
-  if (raw.includes('UNAVAILABLE')) {
+  if (normalizedRaw.includes('UNAVAILABLE')) {
     return 'UNAVAILABLE: Gemma service is temporarily unavailable. Please retry shortly.';
   }
 
-  return raw;
+  return normalizedRaw;
 }
 
 function getApiBaseUrl(): string {
