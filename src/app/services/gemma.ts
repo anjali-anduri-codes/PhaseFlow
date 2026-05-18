@@ -501,7 +501,7 @@ export async function sendChatMessage(
   conversationHistory: ChatMessage[],
   context?: ChatContext
 ): Promise<string> {
-  const recentHistory = conversationHistory.slice(-8);
+  const recentHistory = conversationHistory.slice(-6);
   const historyText = recentHistory
     .map((m) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
     .join('\n');
@@ -543,7 +543,19 @@ export async function sendChatMessage(
     'Reply as assistant only with one final user-facing response.'
   ].join('\n');
 
-  const raw = await callGemma(prompt, { expectsJson: false });
+  let raw = '';
+  try {
+    raw = await callGemma(prompt, { expectsJson: false });
+  } catch {
+    if (userAskedForWorkout(userMessage)) {
+      return getWorkoutFallbackReply(userName, currentPhase);
+    }
+
+    const greeting = userName ? `Hi ${userName}, ` : '';
+    const phaseText = currentPhase !== 'unknown' ? `in your ${currentPhase} phase` : 'today';
+    return `${greeting}Gemma is taking longer than expected right now. Based on where you are ${phaseText}, start with a 5-minute warm-up, do 2-3 low-impact strength sets at steady pace, and finish with a short cool-down. Try again in a moment for a fully personalized answer.`;
+  }
+
   const cleaned = sanitizeChatReply(raw);
 
   if (!cleaned || containsPromptLeak(cleaned) || isEchoResponse(cleaned, userMessage)) {

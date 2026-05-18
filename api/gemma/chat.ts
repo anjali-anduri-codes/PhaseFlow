@@ -20,8 +20,8 @@ interface GemmaResponse {
 }
 
 const PRIMARY_GEMMA_MODEL = 'gemma-4-31b-it' as const;
-const MAX_RETRY_ATTEMPTS = 1;
-const GEMMA_FETCH_TIMEOUT_MS = 8500;
+const MAX_RETRY_ATTEMPTS = 0;
+const GEMMA_FETCH_TIMEOUT_MS = 14000;
 
 interface ParsedGemmaError {
   code?: number;
@@ -160,7 +160,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
               ],
               generationConfig: {
                 temperature: 0.7,
-                maxOutputTokens: expectsJson ? 1500 : 700,
+                maxOutputTokens: expectsJson ? 900 : 420,
                 ...(expectsJson ? { responseMimeType: 'application/json' } : {})
               }
             })
