@@ -177,11 +177,21 @@ async function callGemmaViaBackend(prompt: string, options?: CallGemmaOptions): 
       errorData.message ??
       (errorData.code ? `Gemma request failed (${errorData.code})` : undefined) ??
       'Gemma request failed';
+    
+    // Log the full backend error for debugging
+    console.error('Backend Gemma error:', { 
+      status: response.status, 
+      statusText: response.statusText,
+      error: rawError,
+      fullResponse: errorData 
+    });
+    
     throw new Error(normalizeGemmaErrorMessage(rawError));
   }
 
   const data = (await response.json()) as { text?: string };
   if (!data.text) {
+    console.error('Empty Gemma response:', data);
     throw new Error('Empty response from Gemma');
   }
 

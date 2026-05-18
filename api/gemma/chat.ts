@@ -20,6 +20,7 @@ interface GemmaResponse {
 }
 
 const PRIMARY_GEMMA_MODEL = 'gemma-4-31b-it' as const;
+const FALLBACK_MODELS = ['gemma-2-27b-it', 'gemma-2-9b-it', 'gemma-3-5b-it'] as const;
 const MAX_RETRY_ATTEMPTS = 0;
 const GEMMA_FETCH_TIMEOUT_MS = 14000;
 
@@ -120,7 +121,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     const apiKey = env.GEMMA_API_KEY;
     const model = sanitizeGemmaModel(env.GEMMA_MODEL);
 
+    console.log('Gemma chat request:', { 
+      model, 
+      hasApiKey: !!apiKey,
+      apiKeyPrefix: apiKey ? apiKey.slice(0, 10) : 'none',
+      apiKeyLength: apiKey?.length 
+    });
+
     if (!apiKey) {
+      console.error('GEMMA_API_KEY not configured');
       res.status(500).json({ error: 'GEMMA_API_KEY is not configured' });
       return;
     }
@@ -200,6 +209,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
 
       lastErrorStatus = response.status;
       lastErrorBody = errorBody;
+
+      if (response.status === 500) {
+        const parsedError = parseGemmaError(errorBody);
+        console.error('Gemma 500 error:', {
+          model,
+          hasApiKey: !!apiKey,
+          errorBody: errorBody.slice(0, 200),
+          parsedError
+        });
+        res.status(500).json({
+          error: `Gemma service error (${model}): ${normalizeGemmaApiError(errorBody)}. Check API key validity and model name.`
+        });
+        return;
+      }
 
       if (attempt < MAX_RETRY_ATTEMPTS && isRetryableGemmaError(response.status, parsedError)) {
         // Simple exponential backoff for transient upstream failures.

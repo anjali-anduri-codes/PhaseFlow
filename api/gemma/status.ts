@@ -22,22 +22,47 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
 
   try {
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
       {
-        method: 'GET',
+        method: 'POST',
         headers: {
+          'Content-Type': 'application/json',
           Accept: 'application/json'
-        }
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: 'user',
+              parts: [{ text: 'Say OK.' }]
+            }
+          ],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 10
+          }
+        })
       }
     );
 
     if (!response.ok) {
+      const errorBody = await response.text();
+      const statusCode = response.status;
+      let message = 'Gemma API key is set but API is not reachable.';
+
+      if (statusCode === 401 || statusCode === 403) {
+        message = 'Gemma API key is invalid or does not have permission to access this model.';
+      } else if (statusCode === 404) {
+        message = `Model '${model}' not found. Check GEMMA_MODEL environment variable.`;
+      } else if (statusCode === 500) {
+        message = `Gemma API returned 500 INTERNAL error. Check API key validity and model name. Response: ${errorBody.slice(0, 100)}`;
+      }
+
       res.status(200).json({
         ok: false,
         configured: true,
         reachable: false,
         model,
-        message: 'Gemma API key is set but API is not reachable.'
+        message
       });
       return;
     }
