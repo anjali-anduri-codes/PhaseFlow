@@ -276,10 +276,18 @@ export function GemmaChatScreen({
   const [isTyping, setIsTyping] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savedMessageIds, setSavedMessageIds] = useState<Record<string, boolean>>({});
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const container = messagesContainerRef.current;
+    if (!container) {
+      return;
+    }
+
+    container.scrollTo({
+      top: container.scrollHeight,
+      behavior: 'smooth'
+    });
   };
 
   useEffect(() => {
@@ -384,7 +392,7 @@ export function GemmaChatScreen({
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-auto p-4 space-y-4">
+      <div ref={messagesContainerRef} className="flex-1 overflow-auto p-4 space-y-4">
         {error && (
           <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700">
             {error}
@@ -518,8 +526,6 @@ export function GemmaChatScreen({
             </div>
           </div>
         )}
-
-        <div ref={messagesEndRef} />
       </div>
 
       {/* Suggested Prompts */}

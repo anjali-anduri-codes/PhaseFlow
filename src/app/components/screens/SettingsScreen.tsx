@@ -155,7 +155,12 @@ export function SettingsScreen({ onNavigate }: SettingsScreenProps) {
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-[var(--PhaseFlow-text-secondary)]">GitHub</span>
-                <a href="#" className="flex items-center gap-2 text-[var(--PhaseFlow-sage)]">
+                <a
+                  href="https://github.com/anjali-anduri-codes/PhaseFlow"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-2 text-[var(--PhaseFlow-sage)]"
+                >
                   <Github size={18} />
                   <span>View source</span>
                 </a>

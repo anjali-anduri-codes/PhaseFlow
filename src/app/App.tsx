@@ -374,17 +374,20 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.98),_rgba(247,245,241,0.95)_38%,_rgba(232,236,233,0.82)_100%)] px-0 py-0 sm:px-6 sm:py-10">
-      <div className="relative w-full sm:w-auto">
-        <div className="pointer-events-none absolute left-[-4px] top-32 hidden h-14 w-[2px] rounded-full bg-black/18 sm:block" />
-        <div className="pointer-events-none absolute left-[-4px] top-48 hidden h-20 w-[2px] rounded-full bg-black/18 sm:block" />
-        <div className="pointer-events-none absolute right-[-4px] top-40 hidden h-24 w-[2px] rounded-full bg-black/18 sm:block" />
+    <div className="PhaseFlow-device-wall relative isolate min-h-screen w-full flex items-center justify-center overflow-hidden px-0 py-0 sm:px-6 sm:py-4">
+      <div className="PhaseFlow-device-wall-orb PhaseFlow-device-wall-orb-a" />
+      <div className="PhaseFlow-device-wall-orb PhaseFlow-device-wall-orb-b" />
+      <div className="PhaseFlow-device-wall-grid" />
+      <div className="relative z-10 w-full flex-shrink-0 sm:w-auto">
+        <div className="pointer-events-none absolute left-[-4px] top-28 hidden h-16 w-[2px] rounded-full bg-[#585f68] sm:block" />
+        <div className="pointer-events-none absolute left-[-4px] top-48 hidden h-24 w-[2px] rounded-full bg-[#585f68] sm:block" />
+        <div className="pointer-events-none absolute right-[-4px] top-40 hidden h-28 w-[2px] rounded-full bg-[#4f5660] sm:block" />
 
-        <div className="relative w-full overflow-hidden bg-[linear-gradient(180deg,#2c2c2e_0%,#151516_100%)] sm:w-[404px] sm:rounded-[2.9rem] sm:border-[6px] sm:border-[#2a2a2c] sm:shadow-[0_22px_56px_rgba(0,0,0,0.16)]">
-          <div className="pointer-events-none absolute left-1/2 top-3 z-30 hidden h-6 w-28 -translate-x-1/2 rounded-full bg-[#121212] sm:block" />
-          <div className="pointer-events-none absolute inset-x-10 top-[14px] z-20 hidden h-px bg-white/10 sm:block" />
+        <div className="relative w-full overflow-hidden bg-[linear-gradient(180deg,#7d858e_0%,#616972_44%,#4f5761_100%)] sm:w-[402px] sm:rounded-[2.55rem] sm:border-[6px] sm:border-[#5f6771] sm:shadow-[0_24px_56px_rgba(36,40,46,0.28)]">
+          <div className="pointer-events-none absolute inset-x-3 top-2 hidden h-14 rounded-t-[2rem] bg-gradient-to-b from-white/16 to-transparent sm:block" />
 
-          <div className="w-full bg-[var(--PhaseFlow-off-white)] relative overflow-hidden min-h-screen sm:min-h-0 sm:h-[844px] sm:w-[390px] sm:rounded-[2.45rem]">
+          <div className="w-full bg-[var(--PhaseFlow-off-white)] relative overflow-hidden min-h-screen sm:min-h-0 sm:h-[844px] sm:w-[390px] sm:rounded-[2rem] sm:ring-1 sm:ring-black/10">
+            <div className="pointer-events-none absolute left-1/2 top-3 z-30 hidden h-4 w-4 -translate-x-1/2 rounded-full bg-[#111111] shadow-[0_0_0_2px_rgba(34,34,34,0.9),0_0_0_4px_rgba(255,255,255,0.06)] sm:block" />
             {renderScreen()}
           </div>
         </div>

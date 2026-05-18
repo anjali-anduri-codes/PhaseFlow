@@ -285,6 +285,83 @@
   }
 }
 
+@keyframes PhaseFlow-wall-drift {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(0, -18px, 0) scale(1.05);
+  }
+
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes PhaseFlow-wall-shift {
+  0% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0.35;
+  }
+
+  50% {
+    transform: translate3d(18px, -12px, 0);
+    opacity: 0.5;
+  }
+
+  100% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0.35;
+  }
+}
+
+.PhaseFlow-device-wall {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.98), rgba(247, 245, 241, 0.94) 28%, rgba(223, 228, 233, 0.92) 100%),
+    linear-gradient(135deg, rgba(74, 124, 89, 0.08), rgba(197, 138, 58, 0.08));
+}
+
+.PhaseFlow-device-wall-orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(10px);
+  pointer-events: none;
+}
+
+.PhaseFlow-device-wall-orb-a {
+  top: -8%;
+  left: -4%;
+  width: 22rem;
+  height: 22rem;
+  background: radial-gradient(circle, rgba(92, 154, 108, 0.18), rgba(92, 154, 108, 0));
+  animation: PhaseFlow-wall-drift 10s ease-in-out infinite;
+}
+
+.PhaseFlow-device-wall-orb-b {
+  right: -6%;
+  bottom: -10%;
+  width: 24rem;
+  height: 24rem;
+  background: radial-gradient(circle, rgba(192, 98, 43, 0.16), rgba(192, 98, 43, 0));
+  animation: PhaseFlow-wall-drift 13s ease-in-out infinite reverse;
+}
+
+.PhaseFlow-device-wall-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.4;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.35) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.35) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: radial-gradient(circle at center, black 28%, transparent 88%);
+  animation: PhaseFlow-wall-shift 14s ease-in-out infinite;
+}
+
 .PhaseFlow-rotating-icon {
   animation: PhaseFlow-rotate 3.5s linear infinite;
 }
